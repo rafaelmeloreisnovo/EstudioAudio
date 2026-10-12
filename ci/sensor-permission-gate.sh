@@ -26,7 +26,12 @@ mapfile -t declared < <(
 )
 
 expected=(
+  android.permission.ACCESS_COARSE_LOCATION
+  android.permission.ACCESS_FINE_LOCATION
   android.permission.ACCESS_NETWORK_STATE
+  android.permission.ACCESS_WIFI_STATE
+  android.permission.BLUETOOTH
+  android.permission.BLUETOOTH_CONNECT
   android.permission.RECORD_AUDIO
 )
 
@@ -39,6 +44,13 @@ for i in "${!expected[@]}"; do
   test "${declared[$i]}" = "${expected[$i]}" || \
     fail "PERMISSION[$i]=${declared[$i]} expected=${expected[$i]}"
 done
+
+# Reviewed successor profile: exact allowlist, no radio mutation or background access.
+grep -Fq 'android.permission.BLUETOOTH" android:maxSdkVersion="30"' "$manifest" || fail 'LEGACY_BLUETOOTH_SDK_BOUNDARY_MISSING'
+grep -Fq 'Build.VERSION.SDK_INT < 31 ||' app/src/main/java/io/rafaelia/audiostudio/WavePhysicsLabActivity.java || fail 'CONNECT_SDK_RUNTIME_BOUNDARY_MISSING'
+grep -Fq 'ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION' app/src/main/java/io/rafaelia/audiostudio/WavePhysicsLabActivity.java || fail 'PAIRED_LOCATION_REQUEST_MISSING'
+grep -Fq 'ACCESS_COARSE_LOCATION=PAIRED_FOREGROUND_REQUEST_APPROXIMATE_NOT_PROMOTED_TO_PRECISE' "$origin" || fail 'EMBEDDED_LOCATION_CONTRACT_MISSING'
+python3 ci/test-permission-policy.py --check
 
 optional_sensor_features=(
   android.hardware.sensor.accelerometer
@@ -57,12 +69,13 @@ done
 for forbidden in \
   android.permission.ACTIVITY_RECOGNITION \
   android.permission.HIGH_SAMPLING_RATE_SENSORS \
-  android.permission.ACCESS_FINE_LOCATION \
-  android.permission.ACCESS_COARSE_LOCATION \
   android.permission.CAMERA \
   android.permission.BODY_SENSORS \
   android.permission.BLUETOOTH_SCAN \
-  android.permission.BLUETOOTH_CONNECT; do
+  android.permission.BLUETOOTH_ADVERTISE \
+  android.permission.ACCESS_BACKGROUND_LOCATION \
+  android.permission.CHANGE_WIFI_STATE \
+  android.permission.INTERNET; do
   if grep -Fq "$forbidden" "$manifest"; then
     fail "FORBIDDEN_MANIFEST_PERMISSION=$forbidden"
   fi
@@ -153,7 +166,7 @@ grep -Fq 'HIGH_SAMPLING_RATE_SENSORS=NOT_DECLARED_CURRENT_PROFILE_LE_200HZ' "$or
   fail 'EMBEDDED_HIGH_RATE_PERMISSION_CONTRACT_STALE'
 
 printf 'REPO_ROOT=%s\n' "$repo_root"
-printf 'PERMISSION_SURFACE=RECORD_AUDIO,ACCESS_NETWORK_STATE\n'
+printf 'PERMISSION_SURFACE=%s\n' "${expected[*]}"
 printf 'OPTIONAL_SENSOR_FEATURES=%s\n' "${optional_sensor_features[*]}"
 printf 'PHYSICAL_SENSOR_INVENTORY=TYPE_ALL_PLATFORM_REPORTED\n'
 printf 'UNPROTECTED_PHYSICAL_SENSOR_RUNTIME_PERMISSION=NOT_REQUIRED\n'

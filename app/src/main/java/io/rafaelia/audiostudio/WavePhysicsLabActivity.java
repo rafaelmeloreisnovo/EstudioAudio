@@ -185,7 +185,14 @@ public final class WavePhysicsLabActivity extends Activity implements SensorEven
     }
     private void readSnapshot() {
         if (!has(Manifest.permission.ACCESS_FINE_LOCATION)) {
-            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION);
+            if (has(Manifest.permission.ACCESS_COARSE_LOCATION)) {
+                gps = "TOKEN_VAZIO_PRECISE_LOCATION_NOT_GRANTED";
+                wifi = "TOKEN_VAZIO_PRECISE_LOCATION_NOT_GRANTED";
+                cell = "TOKEN_VAZIO_PRECISE_LOCATION_NOT_GRANTED";
+                show();
+                return;
+            }
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, REQUEST_LOCATION);
             return;
         }
         gps = "TOKEN_VAZIO_GPS_NO_FIX";

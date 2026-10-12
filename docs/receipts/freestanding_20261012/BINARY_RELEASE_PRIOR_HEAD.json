@@ -1,0 +1,43 @@
+{
+  "source_sha": "cff1fd6f1cb073ab39c41784061276f605455c40",
+  "apk_sha256": "41878c489295f9baec647b053ce549e1a2740df287ae55d0ef726cba9043d8ae",
+  "current_main_apk": "NOT_GENERATED",
+  "entries": [
+    {
+      "abi": "armeabi-v7a",
+      "entry": "lib/armeabi-v7a/librafaelia_audio.so",
+      "sha256": "c9f6107ec87f5fe522c33ce83f0a29a24491c882022025dd98f877952c4124cf",
+      "needed": [
+        "0x00000001 (NEEDED)                     Shared library: [libm.so]",
+        "0x00000001 (NEEDED)                     Shared library: [libdl.so]",
+        "0x00000001 (NEEDED)                     Shared library: [libc.so]"
+      ],
+      "undefined": [
+        "1: 00000000     0 FUNC    GLOBAL DEFAULT  UND __cxa_finalize@LIBC (2)",
+        "2: 00000000     0 FUNC    GLOBAL DEFAULT  UND __cxa_atexit@LIBC (2)",
+        "3: 00000000     0 FUNC    GLOBAL DEFAULT  UND __register_atfork@LIBC (2)",
+        "4: 00000000     0 FUNC    GLOBAL DEFAULT  UND __stack_chk_fail@LIBC (2)",
+        "5: 00000000     0 OBJECT  GLOBAL DEFAULT  UND __stack_chk_guard@LIBC (2)",
+        "6: 00000000     0 FUNC    GLOBAL DEFAULT  UND memcpy@LIBC (2)"
+      ]
+    },
+    {
+      "abi": "arm64-v8a",
+      "entry": "lib/arm64-v8a/librafaelia_audio.so",
+      "sha256": "bd64a933acbd834e0851b256351ba648ae6e7f9761ae7661296721ba04ec200b",
+      "needed": [
+        "0x0000000000000001 (NEEDED)             Shared library: [libm.so]",
+        "0x0000000000000001 (NEEDED)             Shared library: [libdl.so]",
+        "0x0000000000000001 (NEEDED)             Shared library: [libc.so]"
+      ],
+      "undefined": [
+        "1: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND __cxa_finalize@LIBC (2)",
+        "2: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND __cxa_atexit@LIBC (2)",
+        "3: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND __register_atfork@LIBC (2)",
+        "4: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND __stack_chk_fail@LIBC (2)"
+      ]
+    }
+  ],
+  "embedded_provenance": "schema=rafaelia.ci-provenance/v1\npipeline=RAFAELIA_AUDIO_START_V1\nquality_method=CAPABILITY_QUALITY_V1\nsource_sha=cff1fd6f1cb073ab39c41784061276f605455c40\nrun_id=37730287227\nrun_number=116\ngradle_authorial_contract=PASS\njava_compile_gate=PASS\nassurance_model_smoke=PASS\nhost_dsp_smoke=PASS\nhost_meter_smoke=PASS\nhost_manifold_smoke=PASS\nhost_verbo_smoke=PASS\naudio_format_core_smoke=PASS\nfreestanding_source_gate=PASS\nlow_dependency_gate=PASS\nauthorial_toolchain_bootstrap=PASS\nnode_app_runtime=0\nexternal_js_actions=PINNED_UPLOAD_ARTIFACT_V7_ONLY\narmv7_zero_undefined=PASS\narmv7_abi_manifest=PASS\naarch64_zero_undefined=PASS\nlow_java_sha256_kat=PASS\nassemble_debug=PENDING_AT_EMBED\nexternal_standard_audit=NOT_AUDITED\nclaim_allowed=false\n",
+  "physical": "USER_DECLARED_NOT_HASH_BOUND"
+}

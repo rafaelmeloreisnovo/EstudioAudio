@@ -12,6 +12,10 @@ efail() {
 }
 
 test -s "$apk" || efail "APK_MISSING=$apk"
+apk_sha="$(sha256sum "$apk" | awk '{print $1}')"
+[[ "${RFA_EXPECTED_APK_SHA256:-}" =~ ^[0-9a-f]{64}$ ]] || efail 'EXPECTED_APK_SHA256=TOKEN_VAZIO_OR_INVALID'
+test "$apk_sha" = "$RFA_EXPECTED_APK_SHA256" || efail 'EXACT_APK_SHA_MISMATCH'
+printf 'FINAL_ELF_APK_SHA256=%s\n' "$apk_sha"
 test -n "${ANDROID_SDK_ROOT:-}" || efail 'ANDROID_SDK_ROOT=TOKEN_VAZIO'
 ndk="$ANDROID_SDK_ROOT/ndk/27.2.12479018"
 readelf="$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
@@ -42,9 +46,10 @@ for abi in armeabi-v7a arm64-v8a; do
   done
   test -z "$unexpected" || efail "UNEXPECTED_NEEDED[$abi]=$unexpected"
 
-  undefined_count="$($nm -u "$so" | sed '/^[[:space:]]*$/d' | wc -l | tr -d ' ')"
+  undefined_count="$($nm --dynamic --undefined-only "$so" | sed '/^[[:space:]]*$/d' | wc -l | tr -d ' ')"
   needed_count="$(printf '%s\n' "$needed" | sed '/^[[:space:]]*$/d' | wc -l | tr -d ' ')"
 
+  printf 'FINAL_ELF_ENTRY_SHA256[%s]=%s\n' "$abi" "$(sha256sum "$so" | awk '{print $1}')"
   printf 'FINAL_ELF_ABI=%s\n' "$abi"
   printf 'FINAL_ELF_NEEDED[%s]=%s\n' "$abi" "${needed//$'\n'/,}"
   printf 'FINAL_ELF_NEEDED_COUNT[%s]=%s\n' "$abi" "$needed_count"

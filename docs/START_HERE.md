@@ -1,5 +1,7 @@
 # START HERE — Rafaelia Audio Studio
 
+> **2026-10-12 successor, not promoted:** [Permission V4](SENSOR_PERMISSION_MATRIX_V4.md), [bounded bit stack/core portability](FREESTANDING_BIT_STACK_V1.md), and [separate core/binary/device receipts](receipts/freestanding_20261012/). Main exact-head CI run 37795560236 failed at stale sensor permission profile; no APK generated for that head. Historical state below stays dated.
+
 > **P0 APK delivery (2026-10-08):** [APK download gap, exact SHA artifact transport, receipt, limits, rollback](ROADMAPS_IA_HUMANOS/APK_DOWNLOAD_DELIVERY_HOTFIX_20261008.md). Proposed PR source change: **IMPLEMENTED_UNTESTED** until full GitHub Actions run produces downloadable APK bytes.
 
 > **P0 CI efficiency / queue (2026-10-08):** [Why 31m of wait had ~2m18s of build time, Draft quick gate, ready-for-review full gate, stale-run cancellation, rollback](ROADMAPS_IA_HUMANOS/CI_FAST_QUEUE_HOTFIX_20261008.md). Quick PASS cannot establish binary PASS or physical-device receipt.
@@ -29,7 +31,7 @@ Repository relationship observed on 2026-10-04: `fork=false`. Project-authored s
 | test hardware | `HARDWARE_TEST_PROTOCOL.md` |
 | understand μ∆ vibration | `MICRO_DELTA_VIBRATION_V1.md` |
 | audit claims/evidence | `VERIFICATION_AND_EVIDENCE.md` |
-| inspect Android permission/sensor boundaries | `SENSOR_PERMISSION_MATRIX_V3.md` |
+| inspect Android permission/sensor boundaries | `SENSOR_PERMISSION_MATRIX_V4.md` |
 | inspect authorship vs generated/platform bytes | `AUTHORIAL_BINARY_ORIGIN_V1.md` |
 | inspect repository license terms | `../LICENSE_RESEARCH_COMMERCIAL.md` |
 | inspect agent/change authority | `../AGENTS.md` |

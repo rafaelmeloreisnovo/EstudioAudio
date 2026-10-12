@@ -17,6 +17,9 @@ printf 'FAST_ARM_DEVICE=NOT_RUN\n'
 
 # Fail promptly before any heavyweight toolchain work.
 bash ci/ci-lane-contract-gate.sh
+  bash ci/sensor-permission-gate.sh
+  python3 ci/test-permission-policy.py --selftest
+  bash ci/bit-stack-core-gate.sh
 while IFS= read -r -d '' script; do
     bash -n "$script" || fail "BASH_SYNTAX:$script"
 done < <(find ci -type f -name '*.sh' -print0)
