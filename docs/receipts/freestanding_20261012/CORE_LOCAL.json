@@ -1,0 +1,23 @@
+{
+  "schema": "rafaelia.scoped-core-receipt/v1",
+  "baseline_source_sha": "aaeec8a84496c499355013ab474adb5e1c40e157",
+  "execution": "GCC x86_64 host strict freestanding objects and hosted test harness",
+  "core_count": 16,
+  "zero_undefined": "PASS",
+  "abi_manifest": "PASS",
+  "host_smokes": {
+    "count": 6,
+    "state": "PASS"
+  },
+  "bit_stack_asan_ubsan": "PASS_WITH_LOCAL_LSAN_DISABLED_CONTAINER_PROCESS_INSPECTION_UNAVAILABLE",
+  "permission_negative_fixtures": {
+    "count": 7,
+    "state": "PASS_REJECTED"
+  },
+  "current_head_ndk_arm_objects": "TOKEN_VAZIO_PENDING_CI",
+  "x86_riscv_clang_objects": "TOKEN_VAZIO_PENDING_CI",
+  "elf_missing_and_mismatched_hash_rejection": "PASS_BEFORE_SDK_PROBE",
+  "claim_allowed_end_to_end": false,
+  "device_collector_split_falsifier": "REPRODUCED_NEGATIVE_ACCEPTED_SPLITS_THEN_MINIMAL_FIX",
+  "device_collector_fixtures": "PASS_POSITIVE_LOCAL_INSTALLED_MISMATCH_MISSING_SHA_ZERO_CALLS_SPLITS_ZERO_READS"
+}

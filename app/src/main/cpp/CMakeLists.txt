@@ -6,6 +6,7 @@ add_library(meter_core STATIC meter_core.c)
 add_library(rfa_manifold_core STATIC
     rfa_wave_core.c
     rfa_matrix_core.c
+    rfa_bit_stack_core.c
     rfa_block_core.c
     rfa_container_core.c
     rfa_fir_core.c
@@ -60,6 +61,7 @@ target_compile_options(rafaelia_audio PRIVATE
 target_link_libraries(rafaelia_audio PRIVATE dsp_core meter_core rfa_manifold_core rfa_verbo_core)
 
 target_link_options(rafaelia_audio PRIVATE
+    -Wl,--as-needed
     -Wl,--gc-sections
     -Wl,--exclude-libs,ALL
 )

@@ -19,6 +19,7 @@ source_sha="$(printf '1%.0s' {1..40})"
 cat > "$tmp/adb" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
+if test -n "${FAKE_ADB_LOG:-}"; then printf '%s\n' "$*" >> "$FAKE_ADB_LOG"; fi
 if test "${1:-}" = devices; then
   printf 'List of devices attached\nFAKE123\tdevice\n'
   exit 0
@@ -32,7 +33,7 @@ case "${1:-}:${2:-}:${3:-}" in
   shell:getprop:ro.product.model) printf 'moto e(7) power\n' ;;
   shell:getprop:ro.product.cpu.abilist) printf 'armeabi-v7a,arm64-v8a\n' ;;
   install:-r:--no-streaming) printf 'Success\n' ;;
-  shell:pm:path) printf 'package:/data/app/fake/base.apk\n' ;;
+  shell:pm:path) printf 'package:/data/app/fake/base.apk\n'; if test "${FAKE_SPLITS:-0}" = 1; then printf 'package:/data/app/fake/split_config.apk\n'; fi ;;
   shell:dumpsys:package)
     printf '  versionCode=1 minSdk=29 targetSdk=35\n'
     printf '  versionName=1.0\n'
@@ -111,6 +112,29 @@ if PATH="$tmp:$PATH" \
   exit 1
 fi
 grep -Fq 'INSTALLED_APK_SHA_MISMATCH' "$tmp/negative-installed.log"
+
+# No device calls when custody SHA is absent; no installed byte read with splits.
+for mode in missing-sha splits; do
+  log="$tmp/$mode.calls"
+  expected="$good_sha"
+  splits=0
+  if test "$mode" = missing-sha; then expected=''; else splits=1; fi
+  if PATH="$tmp:$PATH" ADB_BIN="$tmp/adb" APKSIGNER_BIN="$tmp/apksigner" \
+    ANDROID_SERIAL=FAKE123 FAKE_INSTALLED_APK="$good_apk" FAKE_SPLITS="$splits" \
+    FAKE_ADB_LOG="$log" RFA_EXPECTED_APK_SHA256="$expected" \
+    RFA_SOURCE_SHA="$source_sha" RFA_CI_RUN_ID=37017383796 \
+    bash "$sut" "$good_apk" "$tmp/$mode.txt" >"$tmp/$mode.log" 2>&1; then
+      echo "NEGATIVE_ACCEPTED=$mode" >&2; exit 1
+  fi
+  if test "$mode" = missing-sha; then
+    test ! -s "$log"
+    grep -Fq 'EXPECTED_APK_SHA256=TOKEN_VAZIO_OR_INVALID' "$tmp/$mode.log"
+  else
+    grep -Fq 'SPLIT_APK_CUSTODY_UNSUPPORTED' "$tmp/$mode.log"
+    if grep -Fq 'exec-out' "$log"; then echo 'SPLIT_READ_BEFORE_REJECTION' >&2; exit 1; fi
+  fi
+done
+echo 'DEVICE_CUSTODY_NEGATIVE_MISSING_SHA_AND_SPLITS=PASS'
 
 echo 'DEVICE_INSTALL_RECEIPT_CONTRACT=PASS'
 echo 'PHYSICAL_DEVICE_EXECUTION=NOT_RUN'

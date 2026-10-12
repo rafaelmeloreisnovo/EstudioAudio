@@ -103,6 +103,7 @@ tasks.register("rafaeliaFinalElfBoundaryGate") {
     dependsOn("assembleDebug")
     doLast {
         exec {
+            environment "RFA_EXPECTED_APK_SHA256", java.security.MessageDigest.getInstance("SHA-256").digest(file("build/outputs/apk/debug/app-debug.apk").bytes).encodeHex().toString()
             commandLine "bash", rootProject.file("ci/final-elf-boundary-gate.sh").absolutePath,
                     file("build/outputs/apk/debug/app-debug.apk").absolutePath
         }

@@ -1,0 +1,15 @@
+{
+  "schema": "rafaelia.device-declaration/v1",
+  "source": "user statement 2026-10-12",
+  "state": "USER_DECLARED_PHYSICAL_EXECUTION",
+  "devices": [
+    {"model": "Motorola E7", "architecture_declared": "ARM32"},
+    {"model": "Samsung A1", "architecture_declared": "ARM64", "exact_model": "TOKEN_VAZIO"}
+  ],
+  "apk_sha256": "TOKEN_VAZIO_NOT_SUPPLIED",
+  "source_sha": "TOKEN_VAZIO_NOT_SUPPLIED",
+  "physical_logs": "TOKEN_VAZIO_NOT_SUPPLIED",
+  "permission_denial_and_approximate_flow": "NOT_RUN_BY_AGENT",
+  "acoustic_calibration_and_measurement": "TOKEN_VAZIO",
+  "claim_allowed_exact_artifact_physical": false
+}

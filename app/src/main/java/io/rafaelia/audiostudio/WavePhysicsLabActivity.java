@@ -185,7 +185,14 @@ public final class WavePhysicsLabActivity extends Activity implements SensorEven
     }
     private void readSnapshot() {
         if (!has(Manifest.permission.ACCESS_FINE_LOCATION)) {
-            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION);
+            if (has(Manifest.permission.ACCESS_COARSE_LOCATION)) {
+                gps = "TOKEN_VAZIO_PRECISE_LOCATION_NOT_GRANTED";
+                wifi = "TOKEN_VAZIO_PRECISE_LOCATION_NOT_GRANTED";
+                cell = "TOKEN_VAZIO_PRECISE_LOCATION_NOT_GRANTED";
+                show();
+                return;
+            }
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, REQUEST_LOCATION);
             return;
         }
         gps = "TOKEN_VAZIO_GPS_NO_FIX";
@@ -326,13 +333,23 @@ public final class WavePhysicsLabActivity extends Activity implements SensorEven
 
     @Override public void onRequestPermissionsResult(int req, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(req, permissions, results);
-        if (results.length == 0 || results[0] != PackageManager.PERMISSION_GRANTED) {
-            if (req == REQUEST_LOCATION) gps = "TOKEN_VAZIO_PERMISSION_DENIED";
-            if (req == REQUEST_MIC) audio = "TOKEN_VAZIO_PERMISSION_DENIED";
-            show(); return;
+        if (req == REQUEST_LOCATION) {
+            // Actual grants, not callback array position, govern the paired request.
+            if (has(Manifest.permission.ACCESS_FINE_LOCATION) ||
+                    has(Manifest.permission.ACCESS_COARSE_LOCATION)) {
+                readSnapshot();
+            } else {
+                gps = "TOKEN_VAZIO_PERMISSION_DENIED";
+                wifi = "TOKEN_VAZIO_PERMISSION_DENIED";
+                cell = "TOKEN_VAZIO_PERMISSION_DENIED";
+                show();
+            }
+            return;
         }
-        if (req == REQUEST_LOCATION) readSnapshot();
-        if (req == REQUEST_MIC) sampleMic();
+        if (req == REQUEST_MIC) {
+            if (has(Manifest.permission.RECORD_AUDIO)) sampleMic();
+            else { audio = "TOKEN_VAZIO_PERMISSION_DENIED"; show(); }
+        }
     }
 
     private String receipt() {
