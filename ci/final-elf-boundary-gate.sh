@@ -28,7 +28,8 @@ rm -rf "$tmp"
 mkdir -p "$tmp"
 trap 'rm -rf "$tmp"' EXIT
 
-allowed_needed='libc.so libm.so libdl.so'
+# Existing dynamic imports use libc only; no libm/libdl consumer is implemented.
+allowed_needed='libc.so'
 
 for abi in armeabi-v7a arm64-v8a; do
   so="$tmp/librafaelia_audio.$abi.so"

@@ -61,6 +61,7 @@ target_compile_options(rafaelia_audio PRIVATE
 target_link_libraries(rafaelia_audio PRIVATE dsp_core meter_core rfa_manifold_core rfa_verbo_core)
 
 target_link_options(rafaelia_audio PRIVATE
+    -Wl,--as-needed
     -Wl,--gc-sections
     -Wl,--exclude-libs,ALL
 )
