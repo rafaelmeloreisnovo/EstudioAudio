@@ -95,6 +95,9 @@ grep -Fq 'Success' "$install_log" ||
 package_paths="$("${adb_cmd[@]}" shell pm path "$package" | tr -d '\r')"
 test -n "$package_paths" || fail 'PACKAGE_MANAGER_PATH=TOKEN_VAZIO'
 printf '%s\n' "$package_paths" | grep -Fq 'package:' || fail 'PACKAGE_MANAGER_PATH=FAIL'
+path_count="$(printf '%s\n' "$package_paths" | sed -n 's/^package://p' | wc -l | tr -d ' ')"
+test "$path_count" = 1 || fail "SPLIT_APK_CUSTODY_UNSUPPORTED count=$path_count"
+
 
 remote_apk_path="$(
   printf '%s\n' "$package_paths" |

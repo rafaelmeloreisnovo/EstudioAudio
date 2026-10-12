@@ -26,6 +26,7 @@ done < <(find ci -type f -name '*.sh' -print0)
 bash ci/rafaelia-pipeline.sh topology
 bash ci/distribution-contract-gate.sh
 bash ci/test-provider-preflight.sh
+bash ci/test-android-device-install-receipt.sh
 bash ci/audio-session-gate.sh
 bash ci/zipraf-lowlevel-gate.sh
 bash ci/wave-lab-gate.sh

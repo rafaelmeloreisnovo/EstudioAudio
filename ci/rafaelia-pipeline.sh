@@ -82,6 +82,7 @@ quality() {
   bash ci/zipraf-lowlevel-gate.sh
   # Exercise fail-closed authority/target checks without any real GitHub mutation.
   bash ci/test-provider-preflight.sh
+  bash ci/test-android-device-install-receipt.sh
 
   local core_cflags
   core_cflags='-std=c11 -O2 -ffreestanding -fno-builtin -nostdinc -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -fno-common -Wall -Wextra -Werror -Iapp/src/main/cpp'

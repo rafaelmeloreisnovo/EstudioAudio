@@ -11,3 +11,5 @@ Portability: existing mandatory NDK ARMv7/AArch64 object gates include the new m
 Reference lineage: producer EstudioAudio source and AGENTS; scoped reading of RAFAELIA private bit-addressable specification, Termux RAFCODEPHI freestanding controller Makefile and Vectras producer boundary AGENTS. No external source copied, no VM/QEMU/payload/Gradle reclassified as authorial freestanding code.
 
 Rollback: revert successor PR; preserve prior sources and receipts. Existing audio behavior must pass the same mandatory core/Java/Android checks before promotion.
+
+Device collector successor: synthetic fixture reproduced `NEGATIVE_ACCEPTED=splits` in the existing standalone-APK collector. Minimal correction rejects more than one package path before reading installed bytes. It does not claim split-APK custody and does not inspect an actual phone. Missing SHA causes zero ADB calls; split packages cause zero installed-byte reads. Positive fixture and local/installed hash mismatch fixtures remain required in both CI lanes.
