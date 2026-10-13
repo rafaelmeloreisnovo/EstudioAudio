@@ -1,14 +1,20 @@
 {
   "schema_version": "estudioaudio.physical_playback_observer.v0",
   "created_at": "2026-10-13T19:05:29-03:00",
+  "updated_at": "2026-10-13T19:09:00-03:00",
   "claim_allowed": false,
   "source": {
     "repository": "rafaelmeloreisnovo/EstudioAudio",
     "base": "main@c433097601c7d7a6853ca5ed5d52841b7e333842",
+    "pr": 64,
+    "commits": [
+      "9f2893715bf5fff7dc3d2bde1812671ea1b747d3"
+    ],
     "files": [
       "app/src/main/cpp/rfa_playback_observer_core.c",
       "app/src/main/cpp/rfa_playback_observer_core.h",
       "native/tests/playback_observer_smoke.c",
+      "ci/playback-observer-core-gate.sh",
       "docs/PHYSICAL_PLAYBACK_OBSERVER_V0.md"
     ]
   },
@@ -18,7 +24,13 @@
     "text pause/word scanner",
     "silence/glitch/acoustic-shift candidate counters",
     "host smoke test with synthetic pause/glitch fixture",
+    "fast gate script with explicit TOKEN_VAZIO physical boundary",
     "UI script preset for physical observer workflow"
+  ],
+  "local_validation": [
+    "cc freestanding host compile PASS",
+    "playback_observer_smoke PASS",
+    "nm -u core.o empty"
   ],
   "boundaries": {
     "human_voice_learning": "NOT_IMPLEMENTED_NOT_CLAIMED",
@@ -27,5 +39,5 @@
     "provider_identity": "requires explicit user/provider source receipt",
     "physical_replay": "TOKEN_VAZIO_NOT_RUN"
   },
-  "rollback": "revert this isolated source/docs/test commit; no corpus or audio data modified"
+  "rollback": "revert this isolated source/docs/test/ci delta; no corpus or audio data modified"
 }
