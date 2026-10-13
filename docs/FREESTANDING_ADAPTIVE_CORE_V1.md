@@ -19,6 +19,8 @@ Producer: EstudioAudio. Baseline main@78f6eb2a4c36c2de30a71fc19e429364ad09c140. 
 
 ## Actual commands
 
+`make -f Makefile.core CC=gcc all` produces a reusable static archive + relocatable ELF + SHA256 receipt in build/freestanding-core. It requires only a C compiler, archive/link tools and binutils; these remain explicit build dependencies, not runtime libraries. It produces no bootloader/syscalls/DEX/APK.
+
 `CC=gcc python3 ci/core-standalone-gate.py` runs without JDK/Gradle/SDK/NDK/Android. It rejects ABI drift, undefined symbols and named writable storage; then links without libc (`-nostdlib`) and verifies no DT_NEEDED. Hosted Python ctypes loads the test artifact; that host oracle is not bare-metal physical evidence.
 
 `bash ci/core-byte-parity-gate.sh` additionally compares complete C ZIP bytes and SHA digest with the exact project Java classes. This optional cross-language oracle needs JDK only for testing, not for the C algorithm. Both CI lanes require it before promotion.
@@ -40,3 +42,5 @@ Local GCC x86_64: 18 objects, zero undefined imports/no writable globals; ABI ma
 Physical MotoE7 device-generated source receipts are present in canonical S5 but do not validate this successor core. External calibration, independent installed-byte readback, authorial signer authority, NUMA tests and provider main protection remain separate gaps. Current provider main protection was false on the observed baseline; no provider mutation or merge occurs here.
 
 Rollback of source: revert only the successor PR. Original Java writers, raw data, ZIPs, receipts and branch histories are preserved. SOURCE != ARTIFACT != EXECUTION != EVIDENCE != CLAIM. R3=<local scoped verification,exact-head/physical/consumer/provider gaps,next exact-head CI and reviewed optional consumer>.
+
+CI successor: run38328460942 passed C/Java whole-byte parity, sanitizers and x86_64 but failed RISC-V writable-global gate on compiler-generated `.LCPI` constant pools in small-data. The gate is preserved; RISC-V codegen now explicitly uses `-msmall-data-limit=0`, subject to exact-head retest. Main advanced during work to4b2963aba9534a065f1c1d9b811e24ecad9cde51 (PR59 toolchain report/capability documentation); successor merges and preserves those exact changes.

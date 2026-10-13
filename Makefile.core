@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: LicenseRef-RAFCODE-Research-Commercial-0.1
+# Standalone algorithms only: no JDK/Gradle/SDK/NDK/ART/JNI or system headers.
+ifeq ($(origin CC),default)
+CC := clang
+endif
+AR ?= ar
+NM ?= nm
+READELF ?= readelf
+CORE_OUT ?= build/freestanding-core
+CORE_SRC := $(wildcard app/src/main/cpp/*_core.c)
+CORE_OBJ := $(patsubst app/src/main/cpp/%.c,$(CORE_OUT)/%.o,$(CORE_SRC))
+CORE_FLAGS := -std=c11 -O2 -ffreestanding -nostdinc -fno-builtin -fno-common \
+ -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables \
+ -fno-optimize-sibling-calls -Wall -Wextra -Wshadow -Werror -Iapp/src/main/cpp
+.PHONY: all verify test
+all: $(CORE_OUT)/librafaelia-core.a $(CORE_OUT)/rafaelia-core.elf verify
+$(CORE_OUT)/%.o: app/src/main/cpp/%.c $(wildcard app/src/main/cpp/*.h)
+	@mkdir -p $(CORE_OUT)
+	$(CC) $(CORE_FLAGS) -c $< -o $@
+$(CORE_OUT)/librafaelia-core.a: $(CORE_OBJ)
+	$(AR) rcs $@ $^
+$(CORE_OUT)/rafaelia-core.elf: $(CORE_OBJ)
+	$(CC) -nostdlib -r $^ -o $@
+verify: $(CORE_OUT)/rafaelia-core.elf
+	@test -z "$$($(NM) -u $<)"
+	@! $(READELF) -d $< | grep -q '(NEEDED)'
+	@$(READELF) -h $< | grep -q 'REL (Relocatable file)'
+	@sha256sum $(CORE_OUT)/librafaelia-core.a $< > $(CORE_OUT)/artifact-sha256.txt
+	@echo STANDALONE_CORE_ELF=PASS_RELOCATABLE_NO_RUNTIME_NO_BOOT_CLAIM
+test:
+	CC=$(CC) python3 ci/core-standalone-gate.py
