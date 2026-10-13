@@ -58,6 +58,9 @@ final class AuthorialGuidePlayer {
             while (!stopRequested) {
                 int n = NativeDsp.nativePtbrRender(text, state, block);
                 if (n <= 0) break;
+                if (timbre != null &&
+                        NativeDsp.nativeTimbreApply(block, n, timbre[0], toneState) != 1)
+                    return;
                 int offset = 0;
                 while (offset < n && !stopRequested) {
                     int w = local.write(block, offset, n - offset, AudioTrack.WRITE_BLOCKING);
