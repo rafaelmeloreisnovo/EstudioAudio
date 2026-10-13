@@ -12,15 +12,21 @@ public final class ComplexNetworkNarrationPresetSmoke {
     public static void main(String[] args) {
         String script = ComplexNetworkNarrationPreset.ptBrScript();
         byte[] utf8 = script.getBytes(StandardCharsets.UTF_8);
-        if (utf8.length == 0 || utf8.length > 2048) {
-            throw new AssertionError("PTBR_NATIVE_BOUNDS");
+        // The user needs a coherent spoken explanation, not a slogan;
+        // preserve the native 2048-byte bound and fail on silent shortening.
+        if (utf8.length < 1200 || utf8.length > 2048) {
+            throw new AssertionError("AUDIO_FIRST_EXPLANATION_BOUNDS");
         }
         if (!script.equals(ComplexNetworkNarrationPreset.ptBrScript())) {
             throw new AssertionError("NONDETERMINISTIC_SCRIPT");
         }
         if (!script.contains("Uma lacuna não é zero.")
                 || !script.contains("não comprova sozinho a sua causa.")
-                || !script.contains("efeito posterior e reversão.")) {
+                || !script.contains("efeito posterior e reversão.")
+                || !script.contains("Isso é retroalimentação.")
+                || !script.contains("É preciso testar a relação.")
+                || !script.contains("combinação das ações.")
+                || !script.contains("O desconhecido precisa ser marcado e investigado")) {
             throw new AssertionError("UNKNOWN_OR_CAUSAL_GUARDS_MISSING");
         }
         for (int i = 0; i < script.length(); ++i) {
