@@ -102,3 +102,18 @@ REPRODUCIBLE_SAME_ENV != INDEPENDENT_REPRODUCTION
 | external standards audit | references may guide design | not an internal CI property | independent audit absent | `NOT_AUDITED` |
 
 Update this matrix only from a receipt that identifies its exact source, execution scope and evidence boundary. Do not rewrite an immutable receipt when `main` advances; append/promote from the newer exact receipt instead.
+
+## Successor: exact main 2026-10-12 (does not rewrite historical baseline)
+
+- Source SHA: `78f6eb2a4c36c2de30a71fc19e429364ad09c140` (merge PR #58).
+- GitHub Actions push run: `38322239483`. `gate / build=SUCCESS`; overall workflow `FAILURE` because `04 · provider / verify main` read `main.protected=false` and emitted `P0_MAIN_UNPROTECTED`.
+- Exact debug APK SHA-256: `1ca3e36058eb77fb7f742eabffc1380c57c52de2a16f4e647b52287fa105cc6a`. Both final `librafaelia_audio.so` ELF objects are `ANDROID_PLATFORM_LINKED`, each `DT_NEEDED=libc.so` only. ARMv7 dynamic undefined count **6**; AArch64 count **4**. This does not negate the separate 16-unit zero-undefined freestanding **pre-link** core proof.
+- Portability gate: x86_64 Linux and RISC-V ELF object compilation with zero undefined/writable persistent symbols passed, **not** runtime/device proof.
+- Java app third-party runtime dependencies: **0 declared**; Android framework/ART/JNI remain external platform edges. The canonical GitHub workflow uses the external pinned `actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9` (v7), but has no Node.js **application runtime**.
+- Device-supplied snapshots: three Motorola moto e(7) power ZIPRAF receipts report the same installed APK digest as the CI artifact; identity with the CI-produced bytes was checked independently. Independent split-aware installed-byte readback by an external collector: `TOKEN_VAZIO`. The screenshots/PCM/Opus do not prove standards-conformant acoustic calibration.
+- Debug signer: `DEBUG_NONAUTHORIAL`; expected authorial signing cert = `TOKEN_VAZIO`.
+- Current gates: `BUILD_PASS / PROVIDER_FAIL_CLOSED / SIGNED_RELEASE_NOT_RUN / CLAIM_ALLOWED=false`. Merge of PR #58 did **not** establish governance/release promotion.
+
+**Correction scope:** The old final-ELF row and the old "external JavaScript Actions: none" row above belong to the historical baseline and must not be promoted to this successor SHA. No physical measurements, provider enforcement or release claims are inferred from this documentation update.
+
+**Next falsifiers:** provider-admin exact-head enforcement readback, independent installed-byte/split audit, authorial signing identity, independent calibrated acoustic test. Any implementation migration into pure C (ZIP32/SHA or WaveLab numeric operators) requires a separate code PR, host/ARM/ABI byte-parity tests, and rollback.
