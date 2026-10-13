@@ -66,7 +66,9 @@ final class AuthorialGuidePlayer {
             short[] block = new short[1024];
             local.play();
             while (!stopRequested) {
-                int n = NativeDsp.nativePtbrRender(text, state, block);
+                int n = robotic
+                        ? NativeDsp.nativeRobotPtbrRender(text, state, block)
+                        : NativeDsp.nativePtbrRender(text, state, block);
                 if (n <= 0) break;
                 if (timbre != null &&
                         NativeDsp.nativeTimbreApply(block, n, timbre[0], toneState) != 1)
