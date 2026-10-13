@@ -254,6 +254,14 @@ public final class MainActivity extends Activity {
         controls.addView(stopText, weight());
         panel.addView(controls);
         panel.addView(voiceGuide);
+        // Explicit educational preset only; never starts AudioTrack or records.
+        Button networkNarration = button("Rede complexa · roteiro");
+        networkNarration.setOnClickListener(v -> {
+            guide.stop();
+            scriptEdit.setText(ComplexNetworkNarrationPreset.ptBrScript());
+            status.setText("Rede complexa · exemplo carregado. Voz-guia experimental opcional; inteligibilidade NÃO VALIDADA.");
+        });
+        panel.addView(networkNarration);
 
         speedLabel = new TextView(this);
         speedLabel.setTextColor(Color.rgb(164, 180, 191));
