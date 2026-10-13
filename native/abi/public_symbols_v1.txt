@@ -54,6 +54,8 @@ rfa_ptbr_core:rfa_ptbr_next
 rfa_ptbr_core:rfa_ptbr_validate
 rfa_ptbr_core:rfa_ptbr_reset
 rfa_ptbr_core:rfa_ptbr_render
+rfa_ptbr_core:rfa_ptbr_robot_reset
+rfa_ptbr_core:rfa_ptbr_robot_render
 rfa_timbre_core:rfa_timbre_reset
 rfa_timbre_core:rfa_timbre_accumulate
 rfa_timbre_core:rfa_timbre_finalize
