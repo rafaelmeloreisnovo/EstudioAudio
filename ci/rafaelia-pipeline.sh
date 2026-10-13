@@ -82,6 +82,7 @@ quality() {
   bash ci/audio-session-gate.sh
   bash ci/complex-network-narration-gate.sh
   bash ci/timbre-share-core-gate.sh
+  python3 ci/timbre-share-contract-gate.py
   # Exercise the exact low-level ZIPRAF serializer and compatibility oracle.
   bash ci/zipraf-lowlevel-gate.sh
   # Exercise fail-closed authority/target checks without any real GitHub mutation.
