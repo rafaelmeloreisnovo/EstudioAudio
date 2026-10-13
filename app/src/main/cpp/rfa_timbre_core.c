@@ -30,6 +30,21 @@ int rfa_timbre_accumulate(rfa_timbre_stats *state,
     }
     return 1;
 }
+/* Shift-subtract division to keep ARMv7 freestanding with zero
+ * implicit __aeabi_uldivmod/RT helpers for 64-bit accumulators. */
+static rfa_u64 rfa_timbre_div(rfa_u64 numerator, rfa_u64 denominator) {
+    rfa_u64 quotient=0U,remainder=0U;
+    rfa_u32 i;
+    for(i=64U;i>0U;--i) {
+        remainder=(remainder<<1U) | ((numerator>>(i-1U)) & 1U);
+        quotient<<=1U;
+        if(remainder>=denominator) {
+            remainder-=denominator;
+            quotient|=1U;
+        }
+    }
+    return quotient;
+}
 int rfa_timbre_finalize(const rfa_timbre_stats *state,
                          rfa_timbre_profile *out) {
     rfa_u64 v;
@@ -39,11 +54,11 @@ int rfa_timbre_finalize(const rfa_timbre_stats *state,
         state->zero_crossings>state->samples ||
         state->diff_sum>state->samples*65535U) return 0;
     /* Observational "brightness" proxy; not a learned phoneme/formant model. */
-    v=state->diff_sum*96U/(state->abs_sum+1U);
+    v=rfa_timbre_div(state->diff_sum*96U,state->abs_sum+1U);
     if (v>176U) v=176U;
     out->mix_q8=64U+(rfa_u32)v;
-    out->mean_abs=(rfa_u32)(state->abs_sum/state->samples);
-    out->zero_cross_k=(rfa_u32)(state->zero_crossings*1000U/state->samples);
+    out->mean_abs=(rfa_u32)rfa_timbre_div(state->abs_sum,state->samples);
+    out->zero_cross_k=(rfa_u32)rfa_timbre_div(state->zero_crossings*1000U,state->samples);
     return 1;
 }
 int rfa_timbre_apply(rfa_timbre_filter *state,
