@@ -51,6 +51,8 @@ final class AuthorialGuidePlayer {
                     .setTransferMode(AudioTrack.MODE_STREAM).build();
             if (local.getState() != AudioTrack.STATE_INITIALIZED) return;
             int[] state = new int[6];
+            int[] timbre = TimbreProfileStore.snapshot();
+            int[] toneState = new int[1];
             short[] block = new short[1024];
             local.play();
             while (!stopRequested) {
