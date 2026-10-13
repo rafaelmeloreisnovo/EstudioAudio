@@ -31,3 +31,16 @@ The prior preset was only an eight-sentence summary. The requested accessibility
 5. Require independent review and main branch provider ruleset enforcement before merge. No auto-promotion.
 
 R3=<F_ok: improved source narrative, F_gap: exact-head host run, actual listening and independent review, F_next: CI then auditory device tests>.
+
+## V2 content lock — requested 2026-10-13
+
+The 1,610-byte explanatory script is now treated as the canonical V2 content.
+- Git blob ID of the audited Java source: `0f48f96e5d6512282fa859c122bbf96887aadb67`.
+- The existing fast/full narration gate checks that blob exactly, then runs host negative tests in `ci/complex-network-narration-lock-negative.py`.
+- Six mutations must be rejected: replacing the machine analogy with a slogan, asserting that a missing observation equals zero, confusing observation with causation, omitting downstream dependencies, removing joint-event risk, and modifying source bytes.
+- To improve the narration, propose a separate V3 with a new reviewed source identity and transcript. Do not silently rewrite this V2 baseline.
+- This protects against accidental source regressions in participating CI. It is not GitHub branch protection, a signature, or evidence of audible intelligibility.
+
+Operational provider state at inspection: main.protected=false, rulesets=[]; detailed branch protection read returned HTTP 403. PR #65 remains draft, without independent review or physical listener receipt. These gaps prevent an end-to-end promotional claim.
+
+R3_LOCK=(source identity and negative mutations: IMPLEMENTED_UNTESTED pending exact successor HEAD CI; provider enforcement: ABSENT_OR_UNVERIFIED; speech listener/device: NOT_RUN).
