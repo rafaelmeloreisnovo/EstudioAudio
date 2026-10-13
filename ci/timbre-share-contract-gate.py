@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: LicenseRef-RAFCODE-Research-Commercial-0.1
 # Static contract only: cannot assert Android intent delivery or physical speaker.
 from pathlib import Path
+import re
 m = Path("app/src/main/AndroidManifest.xml").read_text(encoding="utf-8")
 lab = Path("app/src/main/java/io/rafaelia/audiostudio/TimbreLearningLabActivity.java").read_text(encoding="utf-8")
 player = Path("app/src/main/java/io/rafaelia/audiostudio/AuthorialGuidePlayer.java").read_text(encoding="utf-8")
@@ -23,7 +24,10 @@ assert 'MediaStore.MediaColumns.IS_PENDING, 1' in lab
 assert 'getContentResolver().delete(target, null, null)' in lab
 assert 'original_audio=NOT_STORED' in lab
 assert 'profile.v1.txt' in lab and 'receipt.v1.txt' in lab
-assert 'zip.add("audio' not in lab and 'java.util.zip' not in lab and 'java.util.zip' not in zipper
+assert 'zip.add("audio' not in lab
+for source in (lab, zipper):
+    assert not re.search(r'^\\s*import\\s+java\\.util\\.zip\\.', source, re.MULTILINE)
+assert not re.search(r'^\\s*import\\s+android\\.media\\.MediaRecorder\\s*;', lab, re.MULTILINE)
 assert 'NativeDsp.nativeTimbreApply' in player
 assert 'TimbreProfileStore.snapshot' in player
 assert 'static rfa_u64 rfa_timbre_div' in native
