@@ -12,6 +12,7 @@
 #include "rfa_measure_core.h"
 #include "rfa_tele_tts_core.h"
 #include "rfa_ptbr_core.h"
+#include "rfa_timbre_core.h"
 
 /*
  * Platform-owned instances.
@@ -534,4 +535,101 @@ Java_io_rafaelia_audiostudio_NativeDsp_nativePtbrRender(
     raw[5]=(jint)state.step;
     (*env)->SetIntArrayRegion(env,serialized,0,6,raw);
     return (jint)frames;
+}
+
+/* Timbre lab: host bridges bounded caller-owned stats and PCM; no stored
+ * voice, no state globals, and no Android/device calls in freestanding C. */
+JNIEXPORT jint JNICALL
+Java_io_rafaelia_audiostudio_NativeDsp_nativeTimbreAccumulate(
+        JNIEnv *env, jclass clazz, jshortArray samples,
+        jint count, jlongArray metrics) {
+    jlong raw[6];
+    jshort *pcm;
+    rfa_timbre_stats s;
+    int ok;
+    (void)clazz;
+    if (!samples || !metrics || count<=0 || count>4096 ||
+        (*env)->GetArrayLength(env,samples)<count ||
+        (*env)->GetArrayLength(env,metrics)!=6) return 0;
+    (*env)->GetLongArrayRegion(env,metrics,0,6,raw);
+    if ((*env)->ExceptionCheck(env)) return 0;
+    if (raw[0]<0 || raw[0]>1000000 || raw[1]<0 ||
+        raw[2]<0 || raw[3]<0 || raw[4]<-32768 || raw[4]>32767 ||
+        raw[5]<0 || raw[5]>1) return 0;
+    s.samples=(rfa_u64)raw[0];
+    s.abs_sum=(rfa_u64)raw[1];
+    s.diff_sum=(rfa_u64)raw[2];
+    s.zero_crossings=(rfa_u64)raw[3];
+    s.last=(rfa_i32)raw[4];
+    s.seen=(rfa_u32)raw[5];
+    if (s.abs_sum>s.samples*32768U ||
+        s.diff_sum>s.samples*65535U || s.zero_crossings>s.samples ||
+        (s.samples>0U && !s.seen)) return 0;
+    pcm=(*env)->GetShortArrayElements(env,samples,(jboolean *)0);
+    if (!pcm) return 0;
+    ok=rfa_timbre_accumulate(&s,(const rfa_i16 *)pcm,(rfa_u32)count);
+    (*env)->ReleaseShortArrayElements(env,samples,pcm,JNI_ABORT);
+    if (!ok) return 0;
+    raw[0]=(jlong)s.samples; raw[1]=(jlong)s.abs_sum;
+    raw[2]=(jlong)s.diff_sum; raw[3]=(jlong)s.zero_crossings;
+    raw[4]=(jlong)s.last; raw[5]=(jlong)s.seen;
+    (*env)->SetLongArrayRegion(env,metrics,0,6,raw);
+    return (*env)->ExceptionCheck(env)?0:1;
+}
+
+JNIEXPORT jint JNICALL
+Java_io_rafaelia_audiostudio_NativeDsp_nativeTimbreFinalize(
+        JNIEnv *env, jclass clazz, jlongArray metrics,
+        jintArray output) {
+    jlong raw[6];
+    jint profile[3];
+    rfa_timbre_stats s;
+    rfa_timbre_profile p;
+    (void)clazz;
+    if (!metrics || !output ||
+        (*env)->GetArrayLength(env,metrics)!=6 ||
+        (*env)->GetArrayLength(env,output)<3) return 0;
+    (*env)->GetLongArrayRegion(env,metrics,0,6,raw);
+    if ((*env)->ExceptionCheck(env)) return 0;
+    if (raw[0]<0 || raw[0]>1000000 || raw[1]<0 ||
+        raw[2]<0 || raw[3]<0 || raw[4]<-32768 || raw[4]>32767 ||
+        raw[5]!=1) return 0;
+    s.samples=(rfa_u64)raw[0];s.abs_sum=(rfa_u64)raw[1];
+    s.diff_sum=(rfa_u64)raw[2];s.zero_crossings=(rfa_u64)raw[3];
+    s.last=(rfa_i32)raw[4];s.seen=(rfa_u32)raw[5];
+    if(s.abs_sum>s.samples*32768U || s.diff_sum>s.samples*65535U) return 0;
+    if (!rfa_timbre_finalize(&s,&p)) return 0;
+    profile[0]=(jint)p.mix_q8;profile[1]=(jint)p.mean_abs;
+    profile[2]=(jint)p.zero_cross_k;
+    (*env)->SetIntArrayRegion(env,output,0,3,profile);
+    return (*env)->ExceptionCheck(env)?0:1;
+}
+
+JNIEXPORT jint JNICALL
+Java_io_rafaelia_audiostudio_NativeDsp_nativeTimbreApply(
+        JNIEnv *env, jclass clazz, jshortArray samples,
+        jint count, jint mixQ8, jintArray filterState) {
+    jint previous;
+    jshort *pcm;
+    rfa_timbre_profile p;
+    rfa_timbre_filter state;
+    int ok;
+    (void)clazz;
+    if(!samples || !filterState || count<=0 || count>4096 ||
+       mixQ8<64 || mixQ8>240 ||
+       (*env)->GetArrayLength(env,samples)<count ||
+       (*env)->GetArrayLength(env,filterState)!=1) return 0;
+    (*env)->GetIntArrayRegion(env,filterState,0,1,&previous);
+    if ((*env)->ExceptionCheck(env) || previous<-32768 ||
+        previous>32767) return 0;
+    p.mix_q8=(rfa_u32)mixQ8;p.mean_abs=0U;p.zero_cross_k=0U;
+    state.lowpass=(rfa_i32)previous;
+    pcm=(*env)->GetShortArrayElements(env,samples,(jboolean *)0);
+    if (!pcm) return 0;
+    ok=rfa_timbre_apply(&state,&p,(rfa_i16 *)pcm,(rfa_u32)count);
+    (*env)->ReleaseShortArrayElements(env,samples,pcm,ok?0:JNI_ABORT);
+    if (!ok) return 0;
+    previous=(jint)state.lowpass;
+    (*env)->SetIntArrayRegion(env,filterState,0,1,&previous);
+    return (*env)->ExceptionCheck(env)?0:1;
 }

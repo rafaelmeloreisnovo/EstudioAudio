@@ -46,6 +46,10 @@ final class NativeDsp {
     static native int nativeGuideRender(byte[] utf8, int[] state, short[] pcm);
     static native int nativePtbrValidate(byte[] utf8);
     static native int nativePtbrRender(byte[] utf8, int[] state, short[] pcm);
+    // Bounded PCM16 timbre proxy; no identity/speaker recognition or cloud APIs.
+    static native int nativeTimbreAccumulate(short[] pcm, int count, long[] stats);
+    static native int nativeTimbreFinalize(long[] stats, int[] profile);
+    static native int nativeTimbreApply(short[] pcm, int count, int mixQ8, int[] filterState);
 
     static native void nativeReset(int preset);
     static native void nativeProcess(short[] data, int count, int channels);

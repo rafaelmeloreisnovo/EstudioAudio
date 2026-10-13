@@ -21,7 +21,7 @@ flags='-std=c11 -O3 -ffreestanding -fno-builtin -nostdinc -fno-stack-protector -
 sources=(
   rfa_zip32_core rfa_digest_core rfa_bit_stack_core dsp_core meter_core rfa_wave_core rfa_matrix_core rfa_block_core
   rfa_container_core rfa_fir_core rfa_time_core rfa_lms_core
-  rfa_biquad_core rfa_voice_core rfa_tele_tts_core rfa_ptbr_core rfa_measure_core rfa_rac1_core
+  rfa_biquad_core rfa_voice_core rfa_tele_tts_core rfa_ptbr_core rfa_timbre_core rfa_measure_core rfa_rac1_core
   rfa_audio_format_core rfa_verbo_core
 )
 

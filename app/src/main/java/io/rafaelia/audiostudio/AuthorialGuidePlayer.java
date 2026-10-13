@@ -51,11 +51,17 @@ final class AuthorialGuidePlayer {
                     .setTransferMode(AudioTrack.MODE_STREAM).build();
             if (local.getState() != AudioTrack.STATE_INITIALIZED) return;
             int[] state = new int[6];
+            // Snapshot at playback start: a shared WAV cannot change audio mid-stream.
+            int[] timbre = TimbreProfileStore.snapshot();
+            int[] toneState = new int[1];
             short[] block = new short[1024];
             local.play();
             while (!stopRequested) {
                 int n = NativeDsp.nativePtbrRender(text, state, block);
                 if (n <= 0) break;
+                if (timbre != null &&
+                        NativeDsp.nativeTimbreApply(block, n, timbre[0], toneState) != 1)
+                    return;
                 int offset = 0;
                 while (offset < n && !stopRequested) {
                     int w = local.write(block, offset, n - offset, AudioTrack.WRITE_BLOCKING);
