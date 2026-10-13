@@ -36,7 +36,8 @@ final class AuthorialGuidePlayer {
         }
         stopRequested = false;
         playing = true;
-        worker = new Thread(() -> renderToSpeaker(utf8), "rafaelia-authorial-guide");
+        worker = new Thread(() -> renderToSpeaker(utf8, robotic),
+                "rafaelia-authorial-guide");
         worker.start();
         return true;
     }
