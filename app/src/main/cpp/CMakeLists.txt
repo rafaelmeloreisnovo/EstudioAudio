@@ -16,6 +16,8 @@ add_library(rfa_manifold_core STATIC
     rfa_lms_core.c
     rfa_biquad_core.c
     rfa_voice_core.c
+    rfa_tele_tts_core.c
+    rfa_ptbr_core.c
     rfa_measure_core.c
     rfa_rac1_core.c
     rfa_audio_format_core.c

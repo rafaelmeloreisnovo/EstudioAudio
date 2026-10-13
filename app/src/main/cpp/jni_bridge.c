@@ -10,6 +10,8 @@
 #include "meter_core.h"
 #include "rfa_container_core.h"
 #include "rfa_measure_core.h"
+#include "rfa_tele_tts_core.h"
+#include "rfa_ptbr_core.h"
 
 /*
  * Platform-owned instances.
@@ -422,4 +424,114 @@ Java_io_rafaelia_audiostudio_NativeDsp_nativeDecayProfile(
     values[12] = (jlong)(rfa_u64)profile.flags;
     (*env)->SetLongArrayRegion(env, output, 0, 13, values);
     return ok ? 1 : 0;
+}
+
+/* Hosted JNI transfer only: no audio device, syscall, heap or OS in the C core.
+ * Java owns the text buffer and six-word state. No persistent native pointer. */
+JNIEXPORT jint JNICALL
+Java_io_rafaelia_audiostudio_NativeDsp_nativeGuideRender(
+        JNIEnv *env, jclass clazz, jbyteArray text,
+        jintArray state, jshortArray pcm) {
+    jint slots[6];
+    rfa_tts_state s;
+    jbyte *bytes;
+    jshort *output;
+    jsize count, space;
+    rfa_u32 frames;
+    (void)clazz;
+    if (!text || !state || !pcm) return 0;
+    count = (*env)->GetArrayLength(env, text);
+    space = (*env)->GetArrayLength(env, pcm);
+    if (count < 1 || count > 2048 || space < 1 || space > 4096 ||
+        (*env)->GetArrayLength(env, state) != 6) return 0;
+    (*env)->GetIntArrayRegion(env, state, 0, 6, slots);
+    if ((*env)->ExceptionCheck(env)) return 0;
+    s.index = (rfa_u32)slots[0];
+    s.remaining = (rfa_u32)slots[1];
+    s.phase = (rfa_u32)slots[2];
+    s.step = (rfa_u32)slots[3];
+    s.noise = (rfa_u32)slots[4];
+    s.kind = (rfa_u32)slots[5];
+    bytes = (*env)->GetByteArrayElements(env, text, (jboolean *)0);
+    if (!bytes) return 0;
+    output = (*env)->GetShortArrayElements(env, pcm, (jboolean *)0);
+    if (!output) {
+        (*env)->ReleaseByteArrayElements(env, text, bytes, JNI_ABORT);
+        return 0;
+    }
+    frames = rfa_tts_render(&s, (const rfa_u8 *)bytes,
+                            (rfa_u32)count, (rfa_i16 *)output, (rfa_u32)space);
+    (*env)->ReleaseByteArrayElements(env, text, bytes, JNI_ABORT);
+    (*env)->ReleaseShortArrayElements(env, pcm, output, 0);
+    slots[0] = (jint)s.index;
+    slots[1] = (jint)s.remaining;
+    slots[2] = (jint)s.phase;
+    slots[3] = (jint)s.step;
+    slots[4] = (jint)s.noise;
+    slots[5] = (jint)s.kind;
+    (*env)->SetIntArrayRegion(env, state, 0, 6, slots);
+    return (jint)frames;
+}
+
+/* PTBR V1 only: six-word caller-owned state. Hosted JNI has no persistent
+ * pointers into Java memory. Core owns no syscalls, AudioTrack, or heap. */
+JNIEXPORT jint JNICALL
+Java_io_rafaelia_audiostudio_NativeDsp_nativePtbrValidate(
+        JNIEnv *env, jclass clazz, jbyteArray script) {
+    jbyte *source;
+    jsize bytes;
+    int valid;
+    (void)clazz;
+    if (!script) return 0;
+    bytes=(*env)->GetArrayLength(env,script);
+    if (bytes<1 || bytes>2048) return 0;
+    source=(*env)->GetByteArrayElements(env,script,(jboolean *)0);
+    if (!source) return 0;
+    valid=rfa_ptbr_validate((const rfa_u8 *)source,(rfa_u32)bytes);
+    (*env)->ReleaseByteArrayElements(env,script,source,JNI_ABORT);
+    return valid;
+}
+JNIEXPORT jint JNICALL
+Java_io_rafaelia_audiostudio_NativeDsp_nativePtbrRender(
+        JNIEnv *env, jclass clazz, jbyteArray script,
+        jintArray serialized, jshortArray pcm) {
+    jint raw[6];
+    jbyte *source;
+    jshort *output;
+    jsize bytes, space;
+    rfa_ptbr_state state;
+    rfa_u32 frames;
+    (void)clazz;
+    if (!script || !serialized || !pcm) return 0;
+    bytes=(*env)->GetArrayLength(env,script);
+    space=(*env)->GetArrayLength(env,pcm);
+    if (bytes<1 || bytes>2048 || space<1 || space>4096 ||
+        (*env)->GetArrayLength(env,serialized)!=6) return 0;
+    (*env)->GetIntArrayRegion(env,serialized,0,6,raw);
+    if ((*env)->ExceptionCheck(env)) return 0;
+    state.index=(rfa_u32)raw[0];
+    state.remaining=(rfa_u32)raw[1];
+    state.phase=(rfa_u32)raw[2];
+    state.noise=(rfa_u32)raw[3];
+    state.phone=(rfa_u32)raw[4];
+    state.step=(rfa_u32)raw[5];
+    source=(*env)->GetByteArrayElements(env,script,(jboolean *)0);
+    if (!source) return 0;
+    output=(*env)->GetShortArrayElements(env,pcm,(jboolean *)0);
+    if (!output) {
+      (*env)->ReleaseByteArrayElements(env,script,source,JNI_ABORT);
+      return 0;
+    }
+    frames=rfa_ptbr_render(&state,(const rfa_u8 *)source,
+                            (rfa_u32)bytes,(rfa_i16 *)output,(rfa_u32)space);
+    (*env)->ReleaseByteArrayElements(env,script,source,JNI_ABORT);
+    (*env)->ReleaseShortArrayElements(env,pcm,output,0);
+    raw[0]=(jint)state.index;
+    raw[1]=(jint)state.remaining;
+    raw[2]=(jint)state.phase;
+    raw[3]=(jint)state.noise;
+    raw[4]=(jint)state.phone;
+    raw[5]=(jint)state.step;
+    (*env)->SetIntArrayRegion(env,serialized,0,6,raw);
+    return (jint)frames;
 }

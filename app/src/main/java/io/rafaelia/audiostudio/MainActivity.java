@@ -50,6 +50,7 @@ public final class MainActivity extends Activity {
 
     private final Handler ui = new Handler(Looper.getMainLooper());
     private final PcmPlaybackEngine playback = new PcmPlaybackEngine();
+    private final AuthorialGuidePlayer guide = new AuthorialGuidePlayer();
 
     private TextView status;
     private EditText scriptEdit;
@@ -146,15 +147,18 @@ public final class MainActivity extends Activity {
                 "ZRF=RECORDER_WIRED | CFR=RELATIVE_READY");
         studioWorkspaceView.setActionListener(new StudioWorkspaceView.ActionListener() {
             @Override public void onRecord() {
+                guide.stop();
                 ensurePermissionAndRecord(false);
             }
             @Override public void onStopAndMaster() {
                 stopAndMaster();
             }
             @Override public void onPlayMaster() {
+                guide.stop();
                 playMaster();
             }
             @Override public void onRunRelativeCalibration() {
+                guide.stop();
                 ensurePermissionAndCalibrate();
             }
             @Override public void onGenerateEvidence() {
@@ -226,13 +230,38 @@ public final class MainActivity extends Activity {
         Button loadScript = button("Load text");
         loadScript.setOnClickListener(v -> loadPrompter());
         Button recordNarration = button("Record narration");
-        recordNarration.setOnClickListener(v -> ensurePermissionAndRecord(true));
+        recordNarration.setOnClickListener(v -> { guide.stop(); ensurePermissionAndRecord(true); });
         Button stopText = button("Stop text");
+        Button voiceGuide = button("Voice guide · experimental");
+        voiceGuide.setOnClickListener(v -> {
+            if (guide.isPlaying()) {
+                guide.stop();
+                status.setText("Synthetic voice guide stopped.");
+            } else if (recorder != null || processingGate.busy() || calibrationRunning) {
+                status.setText("VOICE_GUIDE_BLOCKED · microphone/DSP session active");
+            } else {
+                String text = scriptEdit.getText().toString();
+                if (guide.play(text)) {
+                    status.setText("Experimental synthetic phonetic guide · NOT natural TTS");
+                } else {
+                    status.setText("VOICE_GUIDE_BLOCKED · empty/oversize script or busy playback");
+                }
+            }
+        });
         stopText.setOnClickListener(v -> stopPrompter());
         controls.addView(loadScript, weight());
         controls.addView(recordNarration, weight());
         controls.addView(stopText, weight());
         panel.addView(controls);
+        panel.addView(voiceGuide);
+        // Explicit educational preset only; never starts AudioTrack or records.
+        Button networkNarration = button("Rede complexa · roteiro");
+        networkNarration.setOnClickListener(v -> {
+            guide.stop();
+            scriptEdit.setText(ComplexNetworkNarrationPreset.ptBrScript());
+            status.setText("Rede complexa · exemplo carregado. Voz-guia experimental opcional; inteligibilidade NÃO VALIDADA.");
+        });
+        panel.addView(networkNarration);
 
         speedLabel = new TextView(this);
         speedLabel.setTextColor(Color.rgb(164, 180, 191));
@@ -443,6 +472,7 @@ public final class MainActivity extends Activity {
         evidenceRunning = true;
         // Do not contaminate microphone/sensor evidence with app playback.
         playback.stop();
+        guide.stop();
         status.setText(
                 "PROOF · ação explícita: coletando μ∆ local · bounded sensor window + evidence…");
 
@@ -991,6 +1021,7 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        guide.stop();
         telemetryRunning = false;
         stopPrompter();
         ui.removeCallbacks(telemetryTick);
