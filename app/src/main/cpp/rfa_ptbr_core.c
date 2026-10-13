@@ -34,9 +34,6 @@ static int rfa_decode(const rfa_u8 *s, rfa_u32 n, rfa_u32 at, rfa_letter *out) {
  out->chr=c; out->nasal=nasal;
  return 1;
 }
-static int rfa_is_vowel(rfa_u32 c) {
- return c=='a'||c=='e'||c=='i'||c=='o'||c=='u';
-}
 int rfa_ptbr_next(const rfa_u8 *utf8, rfa_u32 bytes,
                   rfa_u32 *cursor, rfa_ptbr_event *event) {
  rfa_letter first, second, third;
