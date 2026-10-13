@@ -17,6 +17,14 @@ final class AuthorialGuidePlayer {
     boolean isPlaying() { return playing; }
 
     synchronized boolean play(String text) {
+        return playInternal(text, false);
+    }
+
+    synchronized boolean playRobotic(String text) {
+        return playInternal(text, true);
+    }
+
+    private synchronized boolean playInternal(String text, boolean robotic) {
         stop();
         if (worker != null && worker.isAlive()) return false;
         final byte[] utf8 = text.getBytes(StandardCharsets.UTF_8);
