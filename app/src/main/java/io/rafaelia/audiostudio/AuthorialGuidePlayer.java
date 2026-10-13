@@ -21,6 +21,11 @@ final class AuthorialGuidePlayer {
         if (worker != null && worker.isAlive()) return false;
         final byte[] utf8 = text.getBytes(StandardCharsets.UTF_8);
         if (utf8.length == 0 || utf8.length > 2048) return false;
+        try {
+            if (NativeDsp.nativePtbrValidate(utf8) != 1) return false;
+        } catch (LinkageError | RuntimeException unavailable) {
+            return false;
+        }
         stopRequested = false;
         playing = true;
         worker = new Thread(() -> renderToSpeaker(utf8), "rafaelia-authorial-guide");
@@ -49,7 +54,7 @@ final class AuthorialGuidePlayer {
             short[] block = new short[1024];
             local.play();
             while (!stopRequested) {
-                int n = NativeDsp.nativeGuideRender(text, state, block);
+                int n = NativeDsp.nativePtbrRender(text, state, block);
                 if (n <= 0) break;
                 int offset = 0;
                 while (offset < n && !stopRequested) {
