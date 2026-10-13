@@ -34,6 +34,7 @@ bash ci/zipraf-lowlevel-gate.sh
 bash ci/wave-lab-gate.sh
 bash ci/tele-tts-core-gate.sh
 bash ci/ptbr-core-gate.sh
+bash ci/timbre-share-core-gate.sh
 bash ci/complex-network-narration-gate.sh
 
 # Run freestanding C host vectors with the same strict flags as the full quality
