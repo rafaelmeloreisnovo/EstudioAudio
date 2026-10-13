@@ -71,6 +71,8 @@ quality() {
   bash ci/sensor-permission-gate.sh
   python3 ci/test-permission-policy.py --selftest
   bash ci/bit-stack-core-gate.sh
+  bash ci/core-byte-parity-gate.sh
+  bash ci/core-adaptive-sanitizer-gate.sh
   bash ci/core-portability-gate.sh
 
   gradle :app:rafaeliaBuildContract --no-daemon --stacktrace
@@ -85,7 +87,7 @@ quality() {
   bash ci/test-android-device-install-receipt.sh
 
   local core_cflags
-  core_cflags='-std=c11 -O2 -ffreestanding -fno-builtin -nostdinc -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -fno-common -Wall -Wextra -Werror -Iapp/src/main/cpp'
+  core_cflags='-std=c11 -O2 -ffreestanding -fno-builtin -nostdinc -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -fno-common -fno-optimize-sibling-calls -Wall -Wextra -Werror -Iapp/src/main/cpp'
 
   clang $core_cflags native/tests/dsp_smoke.c app/src/main/cpp/dsp_core.c -o dsp_smoke
   ./dsp_smoke
@@ -114,8 +116,8 @@ quality() {
   ./verbo_smoke
 
   local core_c core_all
-  core_c='app/src/main/cpp/rfa_bit_stack_core.c app/src/main/cpp/dsp_core.c app/src/main/cpp/meter_core.c app/src/main/cpp/rfa_wave_core.c app/src/main/cpp/rfa_matrix_core.c app/src/main/cpp/rfa_block_core.c app/src/main/cpp/rfa_container_core.c app/src/main/cpp/rfa_fir_core.c app/src/main/cpp/rfa_time_core.c app/src/main/cpp/rfa_lms_core.c app/src/main/cpp/rfa_biquad_core.c app/src/main/cpp/rfa_voice_core.c app/src/main/cpp/rfa_measure_core.c app/src/main/cpp/rfa_rac1_core.c app/src/main/cpp/rfa_audio_format_core.c app/src/main/cpp/rfa_verbo_core.c'
-  core_all="$core_c app/src/main/cpp/rfa_bit_stack_core.h app/src/main/cpp/dsp_core.h app/src/main/cpp/meter_core.h app/src/main/cpp/rfa_wave_core.h app/src/main/cpp/rfa_matrix_core.h app/src/main/cpp/rfa_block_core.h app/src/main/cpp/rfa_container_core.h app/src/main/cpp/rfa_fir_core.h app/src/main/cpp/rfa_time_core.h app/src/main/cpp/rfa_lms_core.h app/src/main/cpp/rfa_biquad_core.h app/src/main/cpp/rfa_voice_core.h app/src/main/cpp/rfa_measure_core.h app/src/main/cpp/rfa_rac1_core.h app/src/main/cpp/rfa_audio_format_core.h app/src/main/cpp/rfa_sine_q15.h app/src/main/cpp/rfa_core_types.h app/src/main/cpp/rfa_verbo_core.h"
+  core_c='app/src/main/cpp/rfa_zip32_core.c app/src/main/cpp/rfa_digest_core.c app/src/main/cpp/rfa_bit_stack_core.c app/src/main/cpp/dsp_core.c app/src/main/cpp/meter_core.c app/src/main/cpp/rfa_wave_core.c app/src/main/cpp/rfa_matrix_core.c app/src/main/cpp/rfa_block_core.c app/src/main/cpp/rfa_container_core.c app/src/main/cpp/rfa_fir_core.c app/src/main/cpp/rfa_time_core.c app/src/main/cpp/rfa_lms_core.c app/src/main/cpp/rfa_biquad_core.c app/src/main/cpp/rfa_voice_core.c app/src/main/cpp/rfa_measure_core.c app/src/main/cpp/rfa_rac1_core.c app/src/main/cpp/rfa_audio_format_core.c app/src/main/cpp/rfa_verbo_core.c'
+  core_all="$core_c app/src/main/cpp/rfa_zip32_core.h app/src/main/cpp/rfa_crc32_internal.h app/src/main/cpp/rfa_digest_core.h app/src/main/cpp/rfa_bit_stack_core.h app/src/main/cpp/dsp_core.h app/src/main/cpp/meter_core.h app/src/main/cpp/rfa_wave_core.h app/src/main/cpp/rfa_matrix_core.h app/src/main/cpp/rfa_block_core.h app/src/main/cpp/rfa_container_core.h app/src/main/cpp/rfa_fir_core.h app/src/main/cpp/rfa_time_core.h app/src/main/cpp/rfa_lms_core.h app/src/main/cpp/rfa_biquad_core.h app/src/main/cpp/rfa_voice_core.h app/src/main/cpp/rfa_measure_core.h app/src/main/cpp/rfa_rac1_core.h app/src/main/cpp/rfa_audio_format_core.h app/src/main/cpp/rfa_sine_q15.h app/src/main/cpp/rfa_core_types.h app/src/main/cpp/rfa_verbo_core.h"
 
   if grep -nRE '^[[:space:]]*#include[[:space:]]*<' $core_all; then
     fail 'system header reached the freestanding core'
@@ -169,23 +171,23 @@ architecture() {
   ndk="$ANDROID_SDK_ROOT/ndk/27.2.12479018"
   cc="$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/clang"
   nm="$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-nm"
-  flags='-std=c11 -O3 -ffreestanding -fno-builtin -nostdinc -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -fno-common -fvisibility=hidden -ffunction-sections -fdata-sections -Wall -Wextra -Werror -Iapp/src/main/cpp'
+  flags='-std=c11 -O3 -ffreestanding -fno-builtin -nostdinc -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -fno-common -fno-optimize-sibling-calls -fvisibility=hidden -ffunction-sections -fdata-sections -Wall -Wextra -Werror -Iapp/src/main/cpp'
 
-  for src in rfa_bit_stack_core dsp_core meter_core rfa_wave_core rfa_matrix_core rfa_block_core rfa_container_core rfa_fir_core rfa_time_core rfa_lms_core rfa_biquad_core rfa_voice_core rfa_measure_core rfa_rac1_core rfa_audio_format_core rfa_verbo_core; do
+  for src in rfa_zip32_core rfa_digest_core rfa_bit_stack_core dsp_core meter_core rfa_wave_core rfa_matrix_core rfa_block_core rfa_container_core rfa_fir_core rfa_time_core rfa_lms_core rfa_biquad_core rfa_voice_core rfa_measure_core rfa_rac1_core rfa_audio_format_core rfa_verbo_core; do
     "$cc" --target=armv7a-linux-androideabi29 $flags -c "app/src/main/cpp/$src.c" -o "$src.armv7.o"
     "$nm" -u "$src.armv7.o" > "$src.armv7.undefined"
     test ! -s "$src.armv7.undefined" || { cat "$src.armv7.undefined"; fail "ARMV7_UNDEFINED=$src"; }
   done
 
   : > abi.actual
-  for src in rfa_bit_stack_core dsp_core meter_core rfa_wave_core rfa_matrix_core rfa_block_core rfa_container_core rfa_fir_core rfa_time_core rfa_lms_core rfa_biquad_core rfa_voice_core rfa_measure_core rfa_rac1_core rfa_audio_format_core rfa_verbo_core; do
+  for src in rfa_zip32_core rfa_digest_core rfa_bit_stack_core dsp_core meter_core rfa_wave_core rfa_matrix_core rfa_block_core rfa_container_core rfa_fir_core rfa_time_core rfa_lms_core rfa_biquad_core rfa_voice_core rfa_measure_core rfa_rac1_core rfa_audio_format_core rfa_verbo_core; do
     "$nm" --defined-only --extern-only "$src.armv7.o" | awk -v src="$src" '{print src ":" $NF}' >> abi.actual
   done
   sort -o abi.actual abi.actual
   grep -v '^[[:space:]]*#' native/abi/public_symbols_v1.txt | grep -v '^[[:space:]]*$' | sort > abi.expected
   diff -u abi.expected abi.actual
 
-  for src in rfa_bit_stack_core dsp_core meter_core rfa_wave_core rfa_matrix_core rfa_block_core rfa_container_core rfa_fir_core rfa_time_core rfa_lms_core rfa_biquad_core rfa_voice_core rfa_measure_core rfa_rac1_core rfa_audio_format_core rfa_verbo_core; do
+  for src in rfa_zip32_core rfa_digest_core rfa_bit_stack_core dsp_core meter_core rfa_wave_core rfa_matrix_core rfa_block_core rfa_container_core rfa_fir_core rfa_time_core rfa_lms_core rfa_biquad_core rfa_voice_core rfa_measure_core rfa_rac1_core rfa_audio_format_core rfa_verbo_core; do
     "$cc" --target=aarch64-linux-android29 $flags -c "app/src/main/cpp/$src.c" -o "$src.aarch64.o"
     "$nm" -u "$src.aarch64.o" > "$src.aarch64.undefined"
     test ! -s "$src.aarch64.undefined" || { cat "$src.aarch64.undefined"; fail "AARCH64_UNDEFINED=$src"; }

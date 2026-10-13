@@ -4,6 +4,8 @@ project(rafaelia_audio C)
 add_library(dsp_core STATIC dsp_core.c)
 add_library(meter_core STATIC meter_core.c)
 add_library(rfa_manifold_core STATIC
+    rfa_zip32_core.c
+    rfa_digest_core.c
     rfa_wave_core.c
     rfa_matrix_core.c
     rfa_bit_stack_core.c
@@ -34,6 +36,7 @@ set(RFA_CORE_FLAGS
     -fno-unwind-tables
     -fno-asynchronous-unwind-tables
     -fno-common
+    -fno-optimize-sibling-calls
     -fvisibility=hidden
     -ffunction-sections
     -fdata-sections

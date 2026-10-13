@@ -1,5 +1,7 @@
 # START HERE — Rafaelia Audio Studio
 
+> **2026-10-13 bounded standalone successor:** [SHA/CRC/ZIP32 C, baseline adaptation, exact rollback and ART/SDK/NDK/NUMA boundaries](FREESTANDING_ADAPTIVE_CORE_V1.md). Existing Android path preserved; evidence classes are separate.
+
 > **2026-10-12 successor, not promoted:** [Permission V4](SENSOR_PERMISSION_MATRIX_V4.md), [bounded bit stack/core portability](FREESTANDING_BIT_STACK_V1.md), and [separate core/binary/device receipts](receipts/freestanding_20261012/). Main exact-head CI run 37795560236 failed at stale sensor permission profile; no APK generated for that head. Historical state below stays dated.
 
 > **P0 APK delivery (2026-10-08):** [APK download gap, exact SHA artifact transport, receipt, limits, rollback](ROADMAPS_IA_HUMANOS/APK_DOWNLOAD_DELIVERY_HOTFIX_20261008.md). Proposed PR source change: **IMPLEMENTED_UNTESTED** until full GitHub Actions run produces downloadable APK bytes.

@@ -62,3 +62,9 @@ rfa_verbo_core:rfa_verbo_evaluate
 rfa_bit_stack_core:rfa_bit_stack_bind
 rfa_bit_stack_core:rfa_bit_stack_push
 rfa_bit_stack_core:rfa_bit_stack_pop
+rfa_digest_core:rfa_sha256_reset
+rfa_digest_core:rfa_sha256_update
+rfa_digest_core:rfa_sha256_finish
+rfa_digest_core:rfa_crc32_update
+rfa_lms_core:rfa_nlms_trial_block_q15
+rfa_zip32_core:rfa_zip32_store

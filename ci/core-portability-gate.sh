@@ -9,12 +9,15 @@ command -v "$cc" >/dev/null || { echo "PORTABILITY_CLANG_MISSING=$cc" >&2; exit 
 command -v "$nm_bin" >/dev/null || { echo "PORTABILITY_NM_MISSING=$nm_bin" >&2; exit 1; }
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
-flags=(-std=c11 -O3 -nostdinc -ffreestanding -fno-builtin -fno-common -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -Wall -Wextra -Wshadow -Werror -Iapp/src/main/cpp)
+flags=(-std=c11 -O3 -nostdinc -ffreestanding -fno-builtin -fno-common -fno-optimize-sibling-calls -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -Wall -Wextra -Wshadow -Werror -Iapp/src/main/cpp)
 # Object portability only, not Android packaging or physical execution on these hosts.
 for target in x86_64-unknown-linux-gnu riscv64-unknown-elf; do
+  target_flags=()
+  # Keep compiler-generated constant pools out of writable RISC-V small-data.
+  if test "$target" = riscv64-unknown-elf; then target_flags=(-msmall-data-limit=0); fi
   for src in app/src/main/cpp/*_core.c; do
     obj="$tmp/$(basename "$src").o"
-    "$cc" --target="$target" "${flags[@]}" -c "$src" -o "$obj"
+    "$cc" --target="$target" "${flags[@]}" "${target_flags[@]}" -c "$src" -o "$obj"
     test -z "$("$nm_bin" -u "$obj")" || { "$nm_bin" -u "$obj"; exit 1; }
     writable="$("$nm_bin" -a "$obj" | awk 'NF>=3 && $2 ~ /^[bBcCdDgGsS]$/ {print}')"
     test -z "$writable" || { echo "PORTABILITY_WRITABLE_GLOBAL[$target,$src]=$writable" >&2; exit 1; }
