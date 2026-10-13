@@ -17,6 +17,14 @@ final class AuthorialGuidePlayer {
     boolean isPlaying() { return playing; }
 
     synchronized boolean play(String text) {
+        return playInternal(text, false);
+    }
+
+    synchronized boolean playRobotic(String text) {
+        return playInternal(text, true);
+    }
+
+    private synchronized boolean playInternal(String text, boolean robotic) {
         stop();
         if (worker != null && worker.isAlive()) return false;
         final byte[] utf8 = text.getBytes(StandardCharsets.UTF_8);
@@ -28,12 +36,13 @@ final class AuthorialGuidePlayer {
         }
         stopRequested = false;
         playing = true;
-        worker = new Thread(() -> renderToSpeaker(utf8), "rafaelia-authorial-guide");
+        worker = new Thread(() -> renderToSpeaker(utf8, robotic),
+                "rafaelia-authorial-guide");
         worker.start();
         return true;
     }
 
-    private void renderToSpeaker(byte[] text) {
+    private void renderToSpeaker(byte[] text, boolean robotic) {
         AudioTrack local = null;
         try {
             int min = AudioTrack.getMinBufferSize(
@@ -50,14 +59,16 @@ final class AuthorialGuidePlayer {
                     .setBufferSizeInBytes(Math.max(min, 4096))
                     .setTransferMode(AudioTrack.MODE_STREAM).build();
             if (local.getState() != AudioTrack.STATE_INITIALIZED) return;
-            int[] state = new int[6];
+            int[] state = new int[robotic ? 9 : 6];
             // Snapshot at playback start: a shared WAV cannot change audio mid-stream.
             int[] timbre = TimbreProfileStore.snapshot();
             int[] toneState = new int[1];
             short[] block = new short[1024];
             local.play();
             while (!stopRequested) {
-                int n = NativeDsp.nativePtbrRender(text, state, block);
+                int n = robotic
+                        ? NativeDsp.nativeRobotPtbrRender(text, state, block)
+                        : NativeDsp.nativePtbrRender(text, state, block);
                 if (n <= 0) break;
                 if (timbre != null &&
                         NativeDsp.nativeTimbreApply(block, n, timbre[0], toneState) != 1)

@@ -633,3 +633,63 @@ Java_io_rafaelia_audiostudio_NativeDsp_nativeTimbreApply(
     (*env)->SetIntArrayRegion(env,filterState,0,1,&previous);
     return (*env)->ExceptionCheck(env)?0:1;
 }
+
+/* Opt-in robotic cadence uses a fresh nine-word caller-owned state.
+ * Unchanged six-word PTBR ABI remains available as A/B baseline. */
+JNIEXPORT jint JNICALL
+Java_io_rafaelia_audiostudio_NativeDsp_nativeRobotPtbrRender(
+        JNIEnv *env, jclass clazz, jbyteArray script,
+        jintArray serialized, jshortArray pcm) {
+    jint raw[9];
+    jbyte *source;
+    jshort *output;
+    jsize bytes,space;
+    rfa_ptbr_robot_state state;
+    rfa_u32 frames;
+    (void)clazz;
+    if (!script || !serialized || !pcm ||
+        (*env)->GetArrayLength(env,serialized)!=9) return 0;
+    bytes=(*env)->GetArrayLength(env,script);
+    space=(*env)->GetArrayLength(env,pcm);
+    if (bytes<1 || bytes>2048 || space<1 || space>4096) return 0;
+    (*env)->GetIntArrayRegion(env,serialized,0,9,raw);
+    if ((*env)->ExceptionCheck(env)) return 0;
+    if (raw[0]<0 || raw[1]<0 || raw[1]>1200 ||
+        raw[4]<0 || raw[4]>RFA_PT_N ||
+        raw[6]<0 || raw[6]>2400 ||
+        raw[7]<0 || raw[7]>2400 ||
+        raw[8]<-32768 || raw[8]>32767) return 0;
+    state.voice.index=(rfa_u32)raw[0];
+    state.voice.remaining=(rfa_u32)raw[1];
+    state.voice.phase=(rfa_u32)raw[2];
+    state.voice.noise=(rfa_u32)raw[3];
+    state.voice.phone=(rfa_u32)raw[4];
+    state.voice.step=(rfa_u32)raw[5];
+    state.silence=(rfa_u32)raw[6];
+    state.pending=(rfa_u32)raw[7];
+    state.smooth=(rfa_i32)raw[8];
+    source=(*env)->GetByteArrayElements(env,script,(jboolean *)0);
+    if (!source) return 0;
+    output=(*env)->GetShortArrayElements(env,pcm,(jboolean *)0);
+    if (!output) {
+        (*env)->ReleaseByteArrayElements(env,script,source,JNI_ABORT);
+        return 0;
+    }
+    frames=rfa_ptbr_robot_render(&state,(const rfa_u8 *)source,
+                                  (rfa_u32)bytes,(rfa_i16 *)output,
+                                  (rfa_u32)space);
+    (*env)->ReleaseByteArrayElements(env,script,source,JNI_ABORT);
+    (*env)->ReleaseShortArrayElements(env,pcm,output,frames?0:JNI_ABORT);
+    if (!frames) return 0;
+    raw[0]=(jint)state.voice.index;
+    raw[1]=(jint)state.voice.remaining;
+    raw[2]=(jint)state.voice.phase;
+    raw[3]=(jint)state.voice.noise;
+    raw[4]=(jint)state.voice.phone;
+    raw[5]=(jint)state.voice.step;
+    raw[6]=(jint)state.silence;
+    raw[7]=(jint)state.pending;
+    raw[8]=(jint)state.smooth;
+    (*env)->SetIntArrayRegion(env,serialized,0,9,raw);
+    return (*env)->ExceptionCheck(env)?0:(jint)frames;
+}

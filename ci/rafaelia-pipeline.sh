@@ -81,6 +81,8 @@ quality() {
   # Same Java session gate used in the APK; exercise contention without Android runtime.
   bash ci/audio-session-gate.sh
   bash ci/complex-network-narration-gate.sh
+  python3 ci/robotic-ptbr-routing-gate.py
+  bash ci/ptbr-core-gate.sh
   bash ci/timbre-share-core-gate.sh
   python3 ci/timbre-share-contract-gate.py
   # Exercise the exact low-level ZIPRAF serializer and compatibility oracle.
