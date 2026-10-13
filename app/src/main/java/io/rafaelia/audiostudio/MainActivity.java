@@ -263,6 +263,14 @@ public final class MainActivity extends Activity {
         });
         panel.addView(networkNarration);
 
+        Button physicalObserver = button("Observador físico · roteiro");
+        physicalObserver.setOnClickListener(v -> {
+            guide.stop();
+            scriptEdit.setText(ComplexNetworkNarrationPreset.physicalPlaybackObserverScript());
+            status.setText("Observador físico: cole texto, toque TTS externo, grave pelo app. Voz/pessoa/sexo NÃO CLAIMED.");
+        });
+        panel.addView(physicalObserver);
+
         speedLabel = new TextView(this);
         speedLabel.setTextColor(Color.rgb(164, 180, 191));
         speedLabel.setTextSize(10f);

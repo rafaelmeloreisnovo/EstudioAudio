@@ -76,3 +76,4 @@ rfa_digest_core:rfa_sha256_finish
 rfa_digest_core:rfa_crc32_update
 rfa_lms_core:rfa_nlms_trial_block_q15
 rfa_zip32_core:rfa_zip32_store
+rfa_playback_observer_core:rfa_playback_observe_mono
