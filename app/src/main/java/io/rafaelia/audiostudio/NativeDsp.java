@@ -43,6 +43,8 @@ final class NativeDsp {
 
     private NativeDsp() {}
 
+    static native int nativeGuideRender(byte[] utf8, int[] state, short[] pcm);
+
     static native void nativeReset(int preset);
     static native void nativeProcess(short[] data, int count, int channels);
     static native void nativeApplyGain(short[] data, int count, long gainQ30);

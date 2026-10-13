@@ -10,6 +10,7 @@
 #include "meter_core.h"
 #include "rfa_container_core.h"
 #include "rfa_measure_core.h"
+#include "rfa_tele_tts_core.h"
 
 /*
  * Platform-owned instances.
@@ -422,4 +423,51 @@ Java_io_rafaelia_audiostudio_NativeDsp_nativeDecayProfile(
     values[12] = (jlong)(rfa_u64)profile.flags;
     (*env)->SetLongArrayRegion(env, output, 0, 13, values);
     return ok ? 1 : 0;
+}
+
+/* Hosted JNI transfer only: no audio device, syscall, heap or OS in the C core.
+ * Java owns the text buffer and six-word state. No persistent native pointer. */
+JNIEXPORT jint JNICALL
+Java_io_rafaelia_audiostudio_NativeDsp_nativeGuideRender(
+        JNIEnv *env, jclass clazz, jbyteArray text,
+        jintArray state, jshortArray pcm) {
+    jint slots[6];
+    rfa_tts_state s;
+    jbyte *bytes;
+    jshort *output;
+    jsize count, space;
+    rfa_u32 frames;
+    (void)clazz;
+    if (!text || !state || !pcm) return 0;
+    count = (*env)->GetArrayLength(env, text);
+    space = (*env)->GetArrayLength(env, pcm);
+    if (count < 1 || count > 2048 || space < 1 || space > 4096 ||
+        (*env)->GetArrayLength(env, state) != 6) return 0;
+    (*env)->GetIntArrayRegion(env, state, 0, 6, slots);
+    if ((*env)->ExceptionCheck(env)) return 0;
+    s.index = (rfa_u32)slots[0];
+    s.remaining = (rfa_u32)slots[1];
+    s.phase = (rfa_u32)slots[2];
+    s.step = (rfa_u32)slots[3];
+    s.noise = (rfa_u32)slots[4];
+    s.kind = (rfa_u32)slots[5];
+    bytes = (*env)->GetByteArrayElements(env, text, (jboolean *)0);
+    if (!bytes) return 0;
+    output = (*env)->GetShortArrayElements(env, pcm, (jboolean *)0);
+    if (!output) {
+        (*env)->ReleaseByteArrayElements(env, text, bytes, JNI_ABORT);
+        return 0;
+    }
+    frames = rfa_tts_render(&s, (const rfa_u8 *)bytes,
+                            (rfa_u32)count, (rfa_i16 *)output, (rfa_u32)space);
+    (*env)->ReleaseByteArrayElements(env, text, bytes, JNI_ABORT);
+    (*env)->ReleaseShortArrayElements(env, pcm, output, 0);
+    slots[0] = (jint)s.index;
+    slots[1] = (jint)s.remaining;
+    slots[2] = (jint)s.phase;
+    slots[3] = (jint)s.step;
+    slots[4] = (jint)s.noise;
+    slots[5] = (jint)s.kind;
+    (*env)->SetIntArrayRegion(env, state, 0, 6, slots);
+    return (jint)frames;
 }

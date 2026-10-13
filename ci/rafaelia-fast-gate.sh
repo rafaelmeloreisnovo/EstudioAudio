@@ -32,6 +32,7 @@ bash ci/test-android-device-install-receipt.sh
 bash ci/audio-session-gate.sh
 bash ci/zipraf-lowlevel-gate.sh
 bash ci/wave-lab-gate.sh
+bash ci/tele-tts-core-gate.sh
 
 # Run freestanding C host vectors with the same strict flags as the full quality
 # stage. ARMv7 and AArch64 ELF gates remain mandatory in full mode.
