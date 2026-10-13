@@ -26,7 +26,7 @@ import java.nio.charset.StandardCharsets;
 /** Only uncompressed RIFF/WAVE PCM16 mono: streamed from one granted content URI. */
 public final class TimbreLearningLabActivity extends Activity {
     private static final long MAX_RIFF = 2097152L + 4096L;
-    private static final int MAX_DATA = 2097152;
+    private static final int MAX_DATA = 2000000;
     private TextView status;
     private volatile boolean busy;
 
