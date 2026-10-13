@@ -9,7 +9,7 @@ command -v "$cc" >/dev/null || { echo "PORTABILITY_CLANG_MISSING=$cc" >&2; exit 
 command -v "$nm_bin" >/dev/null || { echo "PORTABILITY_NM_MISSING=$nm_bin" >&2; exit 1; }
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
-flags=(-std=c11 -O3 -nostdinc -ffreestanding -fno-builtin -fno-common -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -Wall -Wextra -Wshadow -Werror -Iapp/src/main/cpp)
+flags=(-std=c11 -O3 -nostdinc -ffreestanding -fno-builtin -fno-common -fno-optimize-sibling-calls -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -Wall -Wextra -Wshadow -Werror -Iapp/src/main/cpp)
 # Object portability only, not Android packaging or physical execution on these hosts.
 for target in x86_64-unknown-linux-gnu riscv64-unknown-elf; do
   for src in app/src/main/cpp/*_core.c; do

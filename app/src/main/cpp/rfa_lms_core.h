@@ -61,6 +61,29 @@ void rfa_nlms_cancel_block_q15(rfa_nlms_q15 *state,
                                const rfa_i16 *reference,
                                rfa_i16 *output, int count, int adapt);
 
+/* Bounded adaptive trial. All buffers belong to the caller, must be disjoint.
+ * Generic frozen coefficients are the baseline. Candidate accepted only when
+ * block error energy <= baseline; on rejection restore checkpoint then run
+ * frozen baseline, including its exact history/position progression.
+ * No CPU/NUMA discovery, allocation or global state. Double computation cost.
+ */
+typedef struct {
+    rfa_i16 weights_saved[256];
+    rfa_i16 history_saved[256];
+    rfa_i16 baseline_q15[4096];
+    rfa_u64 baseline_energy;
+    rfa_u64 candidate_energy;
+} rfa_nlms_trial;
+enum {
+    RFA_NLMS_REJECT_INVALID = 0,
+    RFA_NLMS_ACCEPT_ADAPTED = 1,
+    RFA_NLMS_FROZEN_GENERIC = 2,
+    RFA_NLMS_FALLBACK_ROLLBACK = 3
+};
+int rfa_nlms_trial_block_q15(rfa_nlms_q15 *state,
+    const rfa_i16 *primary, const rfa_i16 *reference, rfa_i16 *output,
+    int count, int allow_adapt, rfa_nlms_trial *trial);
+
 #ifdef __cplusplus
 }
 #endif

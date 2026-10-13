@@ -186,3 +186,51 @@ void rfa_nlms_cancel_block_q15(rfa_nlms_q15 *state,
                 state, primary[i], reference[i], adapt);
     }
 }
+
+int rfa_nlms_trial_block_q15(rfa_nlms_q15 *state,
+    const rfa_i16 *primary,const rfa_i16 *reference,rfa_i16 *output,
+    int count,int allow_adapt,rfa_nlms_trial *trial) {
+    int i, saved_position;
+    rfa_u64 reference_energy=0;
+    if (!state || !primary || !reference || !output || !trial ||
+        !state->weights_q15 || !state->history_q15 ||
+        state->taps<1 || state->taps>256 || count<1 || count>4096 ||
+        state->position<0 || state->position>=state->taps ||
+        state->mu_q15<0 || state->mu_q15>32767 || !state->epsilon_q30 ||
+        state->epsilon_q30>0xffffffffffffffffULL-274877906944ULL ||
+        output==primary || output==reference || output==trial->baseline_q15 ||
+        state->weights_q15==state->history_q15) return RFA_NLMS_REJECT_INVALID;
+    saved_position=state->position;
+    for (i=0;i<state->taps;++i) {
+        trial->weights_saved[i]=state->weights_q15[i];
+        trial->history_saved[i]=state->history_q15[i];
+    }
+    rfa_nlms_cancel_block_q15(state,primary,reference,trial->baseline_q15,count,0);
+    trial->baseline_energy=0;trial->candidate_energy=0;
+    for (i=0;i<count;++i) {
+        rfa_i64 x=trial->baseline_q15[i], r=reference[i];
+        trial->baseline_energy+=(rfa_u64)(x*x);
+        reference_energy+=(rfa_u64)(r*r);
+    }
+    if (!allow_adapt || !reference_energy || !state->mu_q15) {
+        for (i=0;i<count;++i) output[i]=trial->baseline_q15[i];
+        return RFA_NLMS_FROZEN_GENERIC;
+    }
+    for (i=0;i<state->taps;++i) {
+        state->weights_q15[i]=trial->weights_saved[i];
+        state->history_q15[i]=trial->history_saved[i];
+    }
+    state->position=saved_position;
+    rfa_nlms_cancel_block_q15(state,primary,reference,output,count,1);
+    for (i=0;i<count;++i) {
+        rfa_i64 x=output[i];trial->candidate_energy+=(rfa_u64)(x*x);
+    }
+    if (trial->candidate_energy<=trial->baseline_energy) return RFA_NLMS_ACCEPT_ADAPTED;
+    for (i=0;i<state->taps;++i) {
+        state->weights_q15[i]=trial->weights_saved[i];
+        state->history_q15[i]=trial->history_saved[i];
+    }
+    state->position=saved_position;
+    rfa_nlms_cancel_block_q15(state,primary,reference,output,count,0);
+    return RFA_NLMS_FALLBACK_ROLLBACK;
+}
