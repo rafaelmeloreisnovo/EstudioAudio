@@ -27,6 +27,17 @@
             android:name=".WavePhysicsLabActivity"
             android:exported="false" />
 
+        <!-- Explicit Android Sharesheet target: bounded WAV PCM16, no network access. -->
+        <activity
+            android:name=".TimbreLearningLabActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="audio/*" />
+            </intent-filter>
+        </activity>
+
         <activity
             android:name=".MainActivity"
             android:exported="true">
