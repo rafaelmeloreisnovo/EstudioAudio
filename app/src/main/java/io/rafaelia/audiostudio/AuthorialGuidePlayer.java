@@ -51,6 +51,7 @@ final class AuthorialGuidePlayer {
                     .setTransferMode(AudioTrack.MODE_STREAM).build();
             if (local.getState() != AudioTrack.STATE_INITIALIZED) return;
             int[] state = new int[6];
+            // Snapshot at playback start: a shared WAV cannot change audio mid-stream.
             int[] timbre = TimbreProfileStore.snapshot();
             int[] toneState = new int[1];
             short[] block = new short[1024];
