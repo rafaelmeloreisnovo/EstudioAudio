@@ -42,7 +42,7 @@ final class AuthorialGuidePlayer {
         return true;
     }
 
-    private void renderToSpeaker(byte[] text) {
+    private void renderToSpeaker(byte[] text, boolean robotic) {
         AudioTrack local = null;
         try {
             int min = AudioTrack.getMinBufferSize(
