@@ -1,0 +1,31 @@
+{
+  "schema_version": "estudioaudio.physical_playback_observer.v0",
+  "created_at": "2026-10-13T19:05:29-03:00",
+  "claim_allowed": false,
+  "source": {
+    "repository": "rafaelmeloreisnovo/EstudioAudio",
+    "base": "main@c433097601c7d7a6853ca5ed5d52841b7e333842",
+    "files": [
+      "app/src/main/cpp/rfa_playback_observer_core.c",
+      "app/src/main/cpp/rfa_playback_observer_core.h",
+      "native/tests/playback_observer_smoke.c",
+      "docs/PHYSICAL_PLAYBACK_OBSERVER_V0.md"
+    ]
+  },
+  "intent": "observe external TTS playback glitches/pauses/acoustic shifts from pasted text without learning or claiming human voice identity",
+  "implemented": [
+    "freestanding integer-only mono PCM observer",
+    "text pause/word scanner",
+    "silence/glitch/acoustic-shift candidate counters",
+    "host smoke test with synthetic pause/glitch fixture",
+    "UI script preset for physical observer workflow"
+  ],
+  "boundaries": {
+    "human_voice_learning": "NOT_IMPLEMENTED_NOT_CLAIMED",
+    "speaker_identity": "TOKEN_VAZIO",
+    "sex_or_person_of_reader": "TOKEN_VAZIO",
+    "provider_identity": "requires explicit user/provider source receipt",
+    "physical_replay": "TOKEN_VAZIO_NOT_RUN"
+  },
+  "rollback": "revert this isolated source/docs/test commit; no corpus or audio data modified"
+}

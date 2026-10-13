@@ -19,4 +19,13 @@ final class ComplexNetworkNarrationPreset {
                 + "Antes de promover qualquer mudança, precisamos conferir fonte, "
                 + "revisão, controle, efeito posterior e reversão.";
     }
+
+    static String physicalPlaybackObserverScript() {
+        return "Cole aqui a resposta que será lida por um TTS externo. "
+                + "Reproduza o áudio em outro aplicativo, como GPT, DeepSeek ou Claude, "
+                + "e grave pelo botão físico do EstudioAudio. "
+                + "O observador mede pausas, silêncios, glitches e mudanças acústicas candidatas. "
+                + "Ele não identifica pessoa, sexo ou voz humana. "
+                + "Qualquer mudança de tom ou leitor fica como TOKEN_VAZIO até existir evidência física revisável.";
+    }
 }

@@ -106,6 +106,7 @@ quality() {
     app/src/main/cpp/rfa_lms_core.c \
     app/src/main/cpp/rfa_biquad_core.c \
     app/src/main/cpp/rfa_voice_core.c \
+    app/src/main/cpp/rfa_playback_observer_core.c \
     app/src/main/cpp/rfa_measure_core.c \
     app/src/main/cpp/rfa_rac1_core.c \
     app/src/main/cpp/rfa_audio_format_core.c \
@@ -116,9 +117,13 @@ quality() {
     app/src/main/cpp/rfa_verbo_core.c -o verbo_smoke
   ./verbo_smoke
 
+  clang $core_cflags native/tests/playback_observer_smoke.c \
+    app/src/main/cpp/rfa_playback_observer_core.c -o playback_observer_smoke
+  ./playback_observer_smoke
+
   local core_c core_all
-  core_c='app/src/main/cpp/rfa_zip32_core.c app/src/main/cpp/rfa_digest_core.c app/src/main/cpp/rfa_bit_stack_core.c app/src/main/cpp/dsp_core.c app/src/main/cpp/meter_core.c app/src/main/cpp/rfa_wave_core.c app/src/main/cpp/rfa_matrix_core.c app/src/main/cpp/rfa_block_core.c app/src/main/cpp/rfa_container_core.c app/src/main/cpp/rfa_fir_core.c app/src/main/cpp/rfa_time_core.c app/src/main/cpp/rfa_lms_core.c app/src/main/cpp/rfa_biquad_core.c app/src/main/cpp/rfa_voice_core.c app/src/main/cpp/rfa_tele_tts_core.c app/src/main/cpp/rfa_ptbr_core.c app/src/main/cpp/rfa_measure_core.c app/src/main/cpp/rfa_rac1_core.c app/src/main/cpp/rfa_audio_format_core.c app/src/main/cpp/rfa_verbo_core.c'
-  core_all="$core_c app/src/main/cpp/rfa_zip32_core.h app/src/main/cpp/rfa_crc32_internal.h app/src/main/cpp/rfa_digest_core.h app/src/main/cpp/rfa_bit_stack_core.h app/src/main/cpp/dsp_core.h app/src/main/cpp/meter_core.h app/src/main/cpp/rfa_wave_core.h app/src/main/cpp/rfa_matrix_core.h app/src/main/cpp/rfa_block_core.h app/src/main/cpp/rfa_container_core.h app/src/main/cpp/rfa_fir_core.h app/src/main/cpp/rfa_time_core.h app/src/main/cpp/rfa_lms_core.h app/src/main/cpp/rfa_biquad_core.h app/src/main/cpp/rfa_voice_core.h app/src/main/cpp/rfa_tele_tts_core.h app/src/main/cpp/rfa_ptbr_core.h app/src/main/cpp/rfa_measure_core.h app/src/main/cpp/rfa_rac1_core.h app/src/main/cpp/rfa_audio_format_core.h app/src/main/cpp/rfa_sine_q15.h app/src/main/cpp/rfa_core_types.h app/src/main/cpp/rfa_verbo_core.h"
+  core_c='app/src/main/cpp/rfa_zip32_core.c app/src/main/cpp/rfa_digest_core.c app/src/main/cpp/rfa_bit_stack_core.c app/src/main/cpp/dsp_core.c app/src/main/cpp/meter_core.c app/src/main/cpp/rfa_wave_core.c app/src/main/cpp/rfa_matrix_core.c app/src/main/cpp/rfa_block_core.c app/src/main/cpp/rfa_container_core.c app/src/main/cpp/rfa_fir_core.c app/src/main/cpp/rfa_time_core.c app/src/main/cpp/rfa_lms_core.c app/src/main/cpp/rfa_biquad_core.c app/src/main/cpp/rfa_voice_core.c app/src/main/cpp/rfa_playback_observer_core.c app/src/main/cpp/rfa_tele_tts_core.c app/src/main/cpp/rfa_ptbr_core.c app/src/main/cpp/rfa_measure_core.c app/src/main/cpp/rfa_rac1_core.c app/src/main/cpp/rfa_audio_format_core.c app/src/main/cpp/rfa_verbo_core.c'
+  core_all="$core_c app/src/main/cpp/rfa_zip32_core.h app/src/main/cpp/rfa_crc32_internal.h app/src/main/cpp/rfa_digest_core.h app/src/main/cpp/rfa_bit_stack_core.h app/src/main/cpp/dsp_core.h app/src/main/cpp/meter_core.h app/src/main/cpp/rfa_wave_core.h app/src/main/cpp/rfa_matrix_core.h app/src/main/cpp/rfa_block_core.h app/src/main/cpp/rfa_container_core.h app/src/main/cpp/rfa_fir_core.h app/src/main/cpp/rfa_time_core.h app/src/main/cpp/rfa_lms_core.h app/src/main/cpp/rfa_biquad_core.h app/src/main/cpp/rfa_voice_core.h app/src/main/cpp/rfa_playback_observer_core.h app/src/main/cpp/rfa_tele_tts_core.h app/src/main/cpp/rfa_ptbr_core.h app/src/main/cpp/rfa_measure_core.h app/src/main/cpp/rfa_rac1_core.h app/src/main/cpp/rfa_audio_format_core.h app/src/main/cpp/rfa_sine_q15.h app/src/main/cpp/rfa_core_types.h app/src/main/cpp/rfa_verbo_core.h"
 
   if grep -nRE '^[[:space:]]*#include[[:space:]]*<' $core_all; then
     fail 'system header reached the freestanding core'
