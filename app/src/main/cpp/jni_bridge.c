@@ -14,6 +14,7 @@
 #include "rfa_ptbr_core.h"
 #include "rfa_timbre_core.h"
 #include "rfa_digest_core.h"
+#include "rfa_zip32_core.h"
 
 /*
  * Platform-owned instances.
@@ -73,6 +74,108 @@ Java_io_rafaelia_audiostudio_NativeDsp_nativeCrc32(
     (*env)->ReleaseByteArrayElements(env, input, bytes, JNI_ABORT);
     value = (jint)(~accumulator);
     (*env)->SetIntArrayRegion(env, output, 0, 1, &value);
+    return (*env)->ExceptionCheck(env) ? 0 : 1;
+}
+
+JNIEXPORT jint JNICALL
+Java_io_rafaelia_audiostudio_NativeDsp_nativeZip32Store(
+        JNIEnv *env, jclass clazz,
+        jbyteArray namesBlob, jintArray nameOffsets, jintArray nameSizes,
+        jbyteArray dataBlob, jintArray dataOffsets, jintArray dataSizes,
+        jint entryCount, jbyteArray output, jintArray written) {
+    rfa_zip32_entry entries[32];
+    jint name_offset[32];
+    jint name_size[32];
+    jint data_offset[32];
+    jint data_size[32];
+    jbyte *names = (jbyte *)0;
+    jbyte *payloads = (jbyte *)0;
+    jbyte *archive = (jbyte *)0;
+    jsize names_length;
+    jsize payloads_length;
+    jsize output_length;
+    rfa_u32 produced = 0U;
+    jint produced_word;
+    int i;
+    int ok;
+    (void)clazz;
+
+    if (!namesBlob || !nameOffsets || !nameSizes || !dataBlob ||
+        !dataOffsets || !dataSizes || !output || !written) return 0;
+    if (entryCount < 0 || entryCount > 32) return 0;
+    if ((*env)->GetArrayLength(env, nameOffsets) < entryCount ||
+        (*env)->GetArrayLength(env, nameSizes) < entryCount ||
+        (*env)->GetArrayLength(env, dataOffsets) < entryCount ||
+        (*env)->GetArrayLength(env, dataSizes) < entryCount ||
+        (*env)->GetArrayLength(env, written) != 1) return 0;
+
+    names_length = (*env)->GetArrayLength(env, namesBlob);
+    payloads_length = (*env)->GetArrayLength(env, dataBlob);
+    output_length = (*env)->GetArrayLength(env, output);
+    if (output_length < 0) return 0;
+
+    if (entryCount > 0) {
+        (*env)->GetIntArrayRegion(env, nameOffsets, 0, entryCount, name_offset);
+        if ((*env)->ExceptionCheck(env)) return 0;
+        (*env)->GetIntArrayRegion(env, nameSizes, 0, entryCount, name_size);
+        if ((*env)->ExceptionCheck(env)) return 0;
+        (*env)->GetIntArrayRegion(env, dataOffsets, 0, entryCount, data_offset);
+        if ((*env)->ExceptionCheck(env)) return 0;
+        (*env)->GetIntArrayRegion(env, dataSizes, 0, entryCount, data_size);
+        if ((*env)->ExceptionCheck(env)) return 0;
+
+        for (i = 0; i < entryCount; ++i) {
+            if (name_offset[i] < 0 || name_size[i] <= 0 ||
+                data_offset[i] < 0 || data_size[i] < 0 ||
+                name_offset[i] > names_length ||
+                name_size[i] > names_length - name_offset[i] ||
+                data_offset[i] > payloads_length ||
+                data_size[i] > payloads_length - data_offset[i]) {
+                return 0;
+            }
+        }
+    }
+
+    archive = (*env)->GetByteArrayElements(env, output, (jboolean *)0);
+    if (!archive) return 0;
+    if (entryCount > 0) {
+        names = (*env)->GetByteArrayElements(env, namesBlob, (jboolean *)0);
+        if (!names) {
+            (*env)->ReleaseByteArrayElements(env, output, archive, JNI_ABORT);
+            return 0;
+        }
+        if (payloads_length > 0) {
+            payloads = (*env)->GetByteArrayElements(env, dataBlob, (jboolean *)0);
+            if (!payloads) {
+                (*env)->ReleaseByteArrayElements(env, namesBlob, names, JNI_ABORT);
+                (*env)->ReleaseByteArrayElements(env, output, archive, JNI_ABORT);
+                return 0;
+            }
+        }
+
+        for (i = 0; i < entryCount; ++i) {
+            entries[i].name = (const rfa_u8 *)names + name_offset[i];
+            entries[i].name_size = (rfa_u32)name_size[i];
+            entries[i].data = data_size[i] == 0 ? (const rfa_u8 *)0 :
+                    (const rfa_u8 *)payloads + data_offset[i];
+            entries[i].data_size = (rfa_u32)data_size[i];
+        }
+    }
+
+    ok = rfa_zip32_store(entryCount == 0 ? (const rfa_zip32_entry *)0 : entries,
+                         (rfa_u32)entryCount,
+                         (rfa_u8 *)archive, (rfa_u32)output_length, &produced);
+
+    if (payloads) (*env)->ReleaseByteArrayElements(env, dataBlob, payloads, JNI_ABORT);
+    if (names) (*env)->ReleaseByteArrayElements(env, namesBlob, names, JNI_ABORT);
+    if (!ok) {
+        (*env)->ReleaseByteArrayElements(env, output, archive, JNI_ABORT);
+        return 0;
+    }
+    (*env)->ReleaseByteArrayElements(env, output, archive, 0);
+    if ((*env)->ExceptionCheck(env)) return 0;
+    produced_word = (jint)produced;
+    (*env)->SetIntArrayRegion(env, written, 0, 1, &produced_word);
     return (*env)->ExceptionCheck(env) ? 0 : 1;
 }
 
