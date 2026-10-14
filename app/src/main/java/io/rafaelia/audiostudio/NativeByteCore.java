@@ -7,7 +7,6 @@
  */
 package io.rafaelia.audiostudio;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 final class NativeByteCore {
@@ -96,11 +95,24 @@ final class NativeByteCore {
 
     private static byte[] zipJava(String[] names, byte[][] payloads) throws IOException {
         checkEntries(names, payloads);
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        FixedZipOutput stream = new FixedZipOutput(zipCapacity(names, payloads));
         RfaStoredZip zip = new RfaStoredZip(stream);
         for (int i = 0; i < names.length; ++i) zip.add(names[i], payloads[i]);
         zip.finish();
-        return stream.toByteArray();
+        return stream.exactBytes();
+    }
+
+    private static int zipCapacity(String[] names, byte[][] payloads) throws IOException {
+        long bytes = 22L;
+        for (int i = 0; i < names.length; ++i) {
+            int nameSize = asciiPath(names[i]).length;
+            long entryBytes = 30L + nameSize + payloads[i].length + 46L + nameSize;
+            if (entryBytes > RfaStoredZip.MAX_ZIP_BYTES - bytes) {
+                throw new IOException("ZIPRAF total size exceeded");
+            }
+            bytes += entryBytes;
+        }
+        return (int) bytes;
     }
 
     private static FlattenedZipInput flatten(String[] names, byte[][] payloads)
@@ -210,6 +222,42 @@ final class NativeByteCore {
             payloads = new byte[payloadBytes];
             payloadOffsets = new int[count];
             payloadSizes = new int[count];
+        }
+    }
+
+    private static final class FixedZipOutput extends java.io.OutputStream {
+        private final byte[] data;
+        private int size;
+
+        FixedZipOutput(int capacity) throws IOException {
+            if (capacity < 0 || capacity > RfaStoredZip.MAX_ZIP_BYTES) {
+                throw new IOException("ZIPRAF output capacity exceeded");
+            }
+            data = new byte[capacity];
+        }
+
+        @Override
+        public void write(int value) throws IOException {
+            if (size >= data.length) throw new IOException("ZIPRAF output overflow");
+            data[size++] = (byte) value;
+        }
+
+        @Override
+        public void write(byte[] source, int offset, int count) throws IOException {
+            if (source == null || offset < 0 || count < 0 ||
+                    offset > source.length || count > source.length - offset) {
+                throw new IOException("ZIPRAF invalid output window");
+            }
+            if (count > data.length - size) throw new IOException("ZIPRAF output overflow");
+            for (int i = 0; i < count; ++i) data[size + i] = source[offset + i];
+            size += count;
+        }
+
+        byte[] exactBytes() throws IOException {
+            if (size != data.length) throw new IOException("ZIPRAF output length mismatch");
+            byte[] out = new byte[size];
+            for (int i = 0; i < size; ++i) out[i] = data[i];
+            return out;
         }
     }
 }
