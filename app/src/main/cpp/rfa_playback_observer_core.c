@@ -21,10 +21,10 @@ static int rfa_is_pause_mark(rfa_u8 value) {
 }
 
 static rfa_u32 rfa_silence_floor_for_rate(int sample_rate) {
-    if (sample_rate <= 16000) return 320U;
-    if (sample_rate <= 24000) return 480U;
-    if (sample_rate <= 44100) return 882U;
-    return 960U;
+    /* 20 ms at the actual rate; ceil(rate / 50) without overflow. */
+    rfa_u32 floor = (rfa_u32)(sample_rate / 50);
+    if (sample_rate % 50 != 0) ++floor;
+    return floor ? floor : 1U;
 }
 
 static void rfa_scan_text(const rfa_u8 *text, rfa_u32 text_len,
@@ -51,7 +51,8 @@ int rfa_playback_observe_mono(const rfa_i16 *samples, int count,
                               rfa_playback_observation *out) {
     rfa_u32 silence_floor;
     rfa_u32 silence_run = 0U;
-    rfa_u32 bucket_energy[8];
+    rfa_u64 bucket_energy[8];
+    rfa_u32 boundaries[8];
     rfa_u32 bucket_cross[8];
     rfa_u32 bucket_non_silent[8];
     rfa_i16 previous = 0;
@@ -62,11 +63,17 @@ int rfa_playback_observe_mono(const rfa_i16 *samples, int count,
     if (samples == (const rfa_i16 *)0 || count <= 0 || sample_rate <= 0) return 0;
     if (text != (const rfa_u8 *)0 && text_len > 0U) rfa_scan_text(text, text_len, out);
 
+    /* Boundaries = ceil(bucket * count / 8). No i*8 wrap or 64-bit divide. */
     for (bucket = 0; bucket < 8; ++bucket) {
-        bucket_energy[bucket] = 0U;
+        rfa_u32 quotient = (rfa_u32)count / 8U;
+        rfa_u32 remainder = (rfa_u32)count % 8U;
+        boundaries[bucket] = quotient * (rfa_u32)bucket
+                           + (remainder * (rfa_u32)bucket + 7U) / 8U;
+        bucket_energy[bucket] = 0ULL;
         bucket_cross[bucket] = 0U;
         bucket_non_silent[bucket] = 0U;
     }
+    bucket = 0;
 
     silence_floor = rfa_silence_floor_for_rate(sample_rate);
     out->analyzed_samples = (rfa_u32)count;
@@ -74,8 +81,7 @@ int rfa_playback_observe_mono(const rfa_i16 *samples, int count,
     for (i = 0; i < count; ++i) {
         rfa_u32 abs_now = rfa_abs_i16(samples[i]);
         rfa_u32 delta = 0U;
-        bucket = (int)(((rfa_u32)i * 8U) / (rfa_u32)count);
-        if (bucket > 7) bucket = 7;
+        while (bucket < 7 && (rfa_u32)i >= boundaries[bucket + 1]) ++bucket;
         out->energy += (rfa_u64)abs_now * (rfa_u64)abs_now;
         if ((rfa_u64)abs_now > out->peak_abs) out->peak_abs = (rfa_u64)abs_now;
         bucket_energy[bucket] += abs_now >> 4;
@@ -110,8 +116,8 @@ int rfa_playback_observe_mono(const rfa_i16 *samples, int count,
     if (out->glitch_candidates > 0U) out->flags |= RFA_PLAYBACK_FLAG_GLITCH_CANDIDATE;
 
     for (bucket = 1; bucket < 8; ++bucket) {
-        rfa_u32 prev_energy = bucket_energy[bucket - 1];
-        rfa_u32 now_energy = bucket_energy[bucket];
+        rfa_u64 prev_energy = bucket_energy[bucket - 1];
+        rfa_u64 now_energy = bucket_energy[bucket];
         rfa_u32 prev_cross = bucket_cross[bucket - 1];
         rfa_u32 now_cross = bucket_cross[bucket];
         if (bucket_non_silent[bucket - 1] == 0U || bucket_non_silent[bucket] == 0U) continue;
