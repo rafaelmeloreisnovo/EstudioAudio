@@ -2,14 +2,17 @@
 
 SPDX-License-Identifier: LicenseRef-RAFCODE-Research-Commercial-0.1
 
-Status: contract only; no promotion claim.
+Status: SHA-256/CRC32 adapter source added; no APK, physical-device or
+production-route promotion claim.
 
 ## Purpose
 
 The standalone C modules `rfa_digest_core` and `rfa_zip32_core` are already
 freestanding and independently tested. This contract defines the smallest safe
 Android/JNI consumer that can be added without changing the existing Java
-serializer or its byte contract.
+serializer or its byte contract. The current PR now implements only the first
+slice of that consumer: SHA-256 and CRC32 native entrypoints plus an opt-in Java
+adapter that falls back to Java unless native output is exact.
 
 ## A/B rule
 
@@ -64,13 +67,17 @@ unchanged.
 
 ## Remaining gaps
 
-- IMPLEMENTED_UNTESTED: JNI adapter and Android consumer.
+- IMPLEMENTED_SOURCE_ONLY: SHA-256/CRC32 JNI adapter and Java consumer; CI quick
+  source gate passed, but no APK/instrumentation artifact was produced.
+- TOKEN_VAZIO: ZIP32 native adapter and exact Android A/B instrumentation.
 - TOKEN_VAZIO: physical device receipt for the native route.
 - TOKEN_VAZIO: provider/reviewer enforcement.
 - NOT_APPLICABLE to this contract: replacing Gradle, SDK, NDK, ART or Android I/O
   with freestanding code.
 
-R3=<F_ok: standalone C byte contracts and Java baseline are defined,
-F_gap: adapter source, cross-ABI APK bytes and physical native-route receipt,
-F_next: implement adapter plus exact A/B instrumentation gate before switching any
-production call site>
+R3=<F_ok: standalone C byte contracts, Java baseline and SHA/CRC native adapter
+source are defined,
+F_gap: ZIP32 adapter, cross-ABI APK bytes, instrumentation and physical
+native-route receipt,
+F_next: add exact A/B instrumentation gate before switching any production call
+site>
