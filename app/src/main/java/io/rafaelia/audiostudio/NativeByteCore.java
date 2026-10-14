@@ -7,6 +7,9 @@
  */
 package io.rafaelia.audiostudio;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
 final class NativeByteCore {
     static final int ROUTE_JAVA_BASELINE = 0;
     static final int ROUTE_NATIVE_EXACT = 1;
@@ -48,6 +51,29 @@ final class NativeByteCore {
         return new Result(null, baseline, ROUTE_NATIVE_REJECTED_JAVA_FALLBACK);
     }
 
+    static Result zipStored(String[] names, byte[][] payloads, boolean allowNative)
+            throws IOException {
+        byte[] baseline = zipJava(names, payloads);
+        if (!allowNative) return new Result(baseline, 0, ROUTE_JAVA_BASELINE);
+
+        FlattenedZipInput flat = flatten(names, payloads);
+        byte[] nativeZip = new byte[baseline.length];
+        int[] written = new int[1];
+        int ok;
+        try {
+            ok = NativeDsp.nativeZip32Store(
+                    flat.names, flat.nameOffsets, flat.nameSizes,
+                    flat.payloads, flat.payloadOffsets, flat.payloadSizes,
+                    names.length, nativeZip, written);
+        } catch (LinkageError | RuntimeException ex) {
+            ok = 0;
+        }
+        if (ok == 1 && written[0] == baseline.length && sameBytes(baseline, nativeZip)) {
+            return new Result(nativeZip, 0, ROUTE_NATIVE_EXACT);
+        }
+        return new Result(baseline, 0, ROUTE_NATIVE_REJECTED_JAVA_FALLBACK);
+    }
+
     private static byte[] sha256Java(byte[] input, int offset, int count) {
         byte[] copy = new byte[count];
         for (int i = 0; i < count; ++i) copy[i] = input[offset + i];
@@ -68,6 +94,74 @@ final class NativeByteCore {
         return ~crc;
     }
 
+    private static byte[] zipJava(String[] names, byte[][] payloads) throws IOException {
+        checkEntries(names, payloads);
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        RfaStoredZip zip = new RfaStoredZip(stream);
+        for (int i = 0; i < names.length; ++i) zip.add(names[i], payloads[i]);
+        zip.finish();
+        return stream.toByteArray();
+    }
+
+    private static FlattenedZipInput flatten(String[] names, byte[][] payloads)
+            throws IOException {
+        int nameBytes = 0;
+        int payloadBytes = 0;
+        byte[][] asciiNames = new byte[names.length][];
+        for (int i = 0; i < names.length; ++i) {
+            asciiNames[i] = asciiPath(names[i]);
+            nameBytes += asciiNames[i].length;
+            payloadBytes += payloads[i].length;
+        }
+
+        FlattenedZipInput out = new FlattenedZipInput(names.length, nameBytes, payloadBytes);
+        int nameAt = 0;
+        int payloadAt = 0;
+        for (int i = 0; i < names.length; ++i) {
+            byte[] path = asciiNames[i];
+            byte[] data = payloads[i];
+            out.nameOffsets[i] = nameAt;
+            out.nameSizes[i] = path.length;
+            for (int j = 0; j < path.length; ++j) out.names[nameAt++] = path[j];
+            out.payloadOffsets[i] = payloadAt;
+            out.payloadSizes[i] = data.length;
+            for (int j = 0; j < data.length; ++j) out.payloads[payloadAt++] = data[j];
+        }
+        return out;
+    }
+
+    private static void checkEntries(String[] names, byte[][] payloads) throws IOException {
+        if (names == null || payloads == null || names.length != payloads.length) {
+            throw new IOException("ZIPRAF entry arrays mismatch");
+        }
+        if (names.length > RfaStoredZip.MAX_ENTRIES) {
+            throw new IOException("ZIPRAF entry count exceeded");
+        }
+        for (int i = 0; i < names.length; ++i) {
+            if (payloads[i] == null || payloads[i].length > RfaStoredZip.MAX_ENTRY_BYTES) {
+                throw new IOException("ZIPRAF embedded entry missing or too large");
+            }
+        }
+    }
+
+    private static byte[] asciiPath(String path) throws IOException {
+        if (path == null || path.isEmpty() || path.length() > 255 ||
+                path.charAt(0) == '/' || path.endsWith("/") ||
+                path.contains("..") || path.contains("//")) {
+            throw new IOException("ZIPRAF unsafe/invalid path");
+        }
+        byte[] out = new byte[path.length()];
+        for (int i = 0; i < path.length(); ++i) {
+            char c = path.charAt(i);
+            boolean safe = (c >= 'a' && c <= 'z') ||
+                    (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
+                    c == '_' || c == '-' || c == '.' || c == '/';
+            if (!safe) throw new IOException("ZIPRAF non-ASCII or unsafe path");
+            out[i] = (byte)c;
+        }
+        return out;
+    }
+
     private static void checkRange(byte[] input, int offset, int count) {
         if (input == null) throw new IllegalArgumentException("byte-core input is null");
         if (offset < 0 || count < 0 || offset > input.length ||
@@ -82,6 +176,13 @@ final class NativeByteCore {
         return diff == 0;
     }
 
+    private static boolean sameBytes(byte[] left, byte[] right) {
+        if (left.length != right.length) return false;
+        int diff = 0;
+        for (int i = 0; i < left.length; ++i) diff |= left[i] ^ right[i];
+        return diff == 0;
+    }
+
     static final class Result {
         final byte[] bytes;
         final int word;
@@ -91,6 +192,24 @@ final class NativeByteCore {
             this.bytes = bytes;
             this.word = word;
             this.route = route;
+        }
+    }
+
+    private static final class FlattenedZipInput {
+        final byte[] names;
+        final int[] nameOffsets;
+        final int[] nameSizes;
+        final byte[] payloads;
+        final int[] payloadOffsets;
+        final int[] payloadSizes;
+
+        FlattenedZipInput(int count, int nameBytes, int payloadBytes) {
+            names = new byte[nameBytes];
+            nameOffsets = new int[count];
+            nameSizes = new int[count];
+            payloads = new byte[payloadBytes];
+            payloadOffsets = new int[count];
+            payloadSizes = new int[count];
         }
     }
 }
