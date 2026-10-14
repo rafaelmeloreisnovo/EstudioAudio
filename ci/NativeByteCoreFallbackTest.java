@@ -6,7 +6,7 @@
 package io.rafaelia.audiostudio;
 
 final class NativeByteCoreFallbackTest {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         int vectors = 0;
         for (int length : new int[] {0, 3, 255, 4096, 65536}) {
             byte[] input = new byte[length + 7];
@@ -29,6 +29,7 @@ final class NativeByteCoreFallbackTest {
             }
             ++vectors;
         }
+        zipFallbackVectors();
         boolean rejected = false;
         try {
             NativeByteCore.sha256(new byte[1], 2, 1, false);
@@ -39,9 +40,54 @@ final class NativeByteCoreFallbackTest {
         System.out.println("NATIVE_BYTE_CORE_FAIL_CLOSED_FALLBACK_VECTORS=" + vectors + " PASS");
     }
 
+    private static void zipFallbackVectors() throws Exception {
+        String[][] names = new String[][] {
+                new String[0],
+                new String[] {"empty.txt"},
+                new String[] {"metadata/proof.bin", "empty.txt"}
+        };
+        byte[][][] payloads = new byte[][][] {
+                new byte[0][],
+                new byte[][] {new byte[0]},
+                new byte[][] {bytes(65), new byte[0]}
+        };
+        for (int i = 0; i < names.length; ++i) {
+            NativeByteCore.Result baseline = NativeByteCore.zipStored(names[i], payloads[i], false);
+            NativeByteCore.Result fallback = NativeByteCore.zipStored(names[i], payloads[i], true);
+            if (baseline.route != NativeByteCore.ROUTE_JAVA_BASELINE ||
+                    fallback.route != NativeByteCore.ROUTE_NATIVE_REJECTED_JAVA_FALLBACK) {
+                throw new AssertionError("ZIP route changed");
+            }
+            if (!sameBytes(baseline.bytes, fallback.bytes)) {
+                throw new AssertionError("ZIP fallback changed value");
+            }
+        }
+        boolean rejected = false;
+        try {
+            NativeByteCore.zipStored(new String[] {"../x"}, new byte[][] {new byte[0]}, false);
+        } catch (java.io.IOException expected) {
+            rejected = true;
+        }
+        if (!rejected) throw new AssertionError("unsafe ZIP path accepted");
+        System.out.println("NATIVE_ZIP32_FAIL_CLOSED_FALLBACK_VECTORS=" + names.length + " PASS");
+    }
+
+    private static byte[] bytes(int count) {
+        byte[] out = new byte[count];
+        for (int i = 0; i < count; ++i) out[i] = (byte)(i * 73 + 19);
+        return out;
+    }
+
     private static boolean same32(byte[] left, byte[] right) {
         int diff = 0;
         for (int i = 0; i < 32; ++i) diff |= left[i] ^ right[i];
+        return diff == 0;
+    }
+
+    private static boolean sameBytes(byte[] left, byte[] right) {
+        if (left.length != right.length) return false;
+        int diff = 0;
+        for (int i = 0; i < left.length; ++i) diff |= left[i] ^ right[i];
         return diff == 0;
     }
 }
