@@ -1,5 +1,7 @@
 # START HERE — Rafaelia Audio Studio
 
+> **2026-10-14 ZIP32 falsifier successor (draft, no promotion):** [Minimal ATLAS route to existing freestanding ZIP32/CRC32 producer and new adversarial test gates](atlas/ZIP32_FALSIFIER_SUCCESSOR_20261014.md). No duplicate algorithm or Android production change; exact-head CI and provider/physical gates remain independent.
+
 > **2026-10-13 bounded standalone successor:** [SHA/CRC/ZIP32 C, baseline adaptation, exact rollback and ART/SDK/NDK/NUMA boundaries](FREESTANDING_ADAPTIVE_CORE_V1.md). Existing Android path preserved; evidence classes are separate.
 
 > **2026-10-12 successor, not promoted:** [Permission V4](SENSOR_PERMISSION_MATRIX_V4.md), [bounded bit stack/core portability](FREESTANDING_BIT_STACK_V1.md), and [separate core/binary/device receipts](receipts/freestanding_20261012/). Main exact-head CI run 37795560236 failed at stale sensor permission profile; no APK generated for that head. Historical state below stays dated.
