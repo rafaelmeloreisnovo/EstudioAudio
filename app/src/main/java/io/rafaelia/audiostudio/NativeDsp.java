@@ -43,6 +43,13 @@ final class NativeDsp {
 
     private NativeDsp() {}
 
+    static native int nativeSha256(byte[] input, int offset, int count, byte[] output);
+    static native int nativeCrc32(byte[] input, int offset, int count, int[] output);
+    static native int nativeZip32Store(
+            byte[] names, int[] nameOffsets, int[] nameSizes,
+            byte[] payloads, int[] payloadOffsets, int[] payloadSizes,
+            int entryCount, byte[] output, int[] written);
+
     static native int nativeGuideRender(byte[] utf8, int[] state, short[] pcm);
     static native int nativePtbrValidate(byte[] utf8);
     static native int nativePtbrRender(byte[] utf8, int[] state, short[] pcm);
