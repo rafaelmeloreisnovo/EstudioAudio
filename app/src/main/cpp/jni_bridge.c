@@ -13,6 +13,7 @@
 #include "rfa_tele_tts_core.h"
 #include "rfa_ptbr_core.h"
 #include "rfa_timbre_core.h"
+#include "rfa_digest_core.h"
 
 /*
  * Platform-owned instances.
@@ -21,6 +22,59 @@
 static dsp_state g_dsp_state;
 static meter_state g_meter_state;
 static rfa_exp_sweep_q31 g_sweep_state;
+
+/* Byte-core JNI edge only. The digest/CRC implementation remains in the
+ * freestanding core; Java owns all input/output arrays and fallback policy. */
+JNIEXPORT jint JNICALL
+Java_io_rafaelia_audiostudio_NativeDsp_nativeSha256(
+        JNIEnv *env, jclass clazz, jbyteArray input, jint offset,
+        jint count, jbyteArray output) {
+    rfa_sha256 state;
+    jbyte *bytes;
+    rfa_u8 digest[32];
+    jsize length;
+    (void)clazz;
+    if (!input || !output) return 0;
+    length = (*env)->GetArrayLength(env, input);
+    if (offset < 0 || count < 0 || offset > length || count > length - offset) return 0;
+    if ((*env)->GetArrayLength(env, output) != 32) return 0;
+    bytes = (*env)->GetByteArrayElements(env, input, (jboolean *)0);
+    if (!bytes) return 0;
+    rfa_sha256_reset(&state);
+    if (!rfa_sha256_update(&state, (const rfa_u8 *)bytes + offset, (rfa_u32)count) ||
+        !rfa_sha256_finish(&state, digest)) {
+        (*env)->ReleaseByteArrayElements(env, input, bytes, JNI_ABORT);
+        return 0;
+    }
+    (*env)->ReleaseByteArrayElements(env, input, bytes, JNI_ABORT);
+    (*env)->SetByteArrayRegion(env, output, 0, 32, (const jbyte *)digest);
+    return (*env)->ExceptionCheck(env) ? 0 : 1;
+}
+
+JNIEXPORT jint JNICALL
+Java_io_rafaelia_audiostudio_NativeDsp_nativeCrc32(
+        JNIEnv *env, jclass clazz, jbyteArray input, jint offset, jint count,
+        jintArray output) {
+    rfa_u32 accumulator = 0xffffffffU;
+    jint value;
+    jbyte *bytes;
+    jsize length;
+    (void)clazz;
+    if (!input || !output) return 0;
+    length = (*env)->GetArrayLength(env, input);
+    if (offset < 0 || count < 0 || offset > length || count > length - offset) return 0;
+    if ((*env)->GetArrayLength(env, output) != 1) return 0;
+    bytes = (*env)->GetByteArrayElements(env, input, (jboolean *)0);
+    if (!bytes) return 0;
+    if (!rfa_crc32_update(&accumulator, (const rfa_u8 *)bytes + offset, (rfa_u32)count)) {
+        (*env)->ReleaseByteArrayElements(env, input, bytes, JNI_ABORT);
+        return 0;
+    }
+    (*env)->ReleaseByteArrayElements(env, input, bytes, JNI_ABORT);
+    value = (jint)(~accumulator);
+    (*env)->SetIntArrayRegion(env, output, 0, 1, &value);
+    return (*env)->ExceptionCheck(env) ? 0 : 1;
+}
 
 JNIEXPORT void JNICALL
 Java_io_rafaelia_audiostudio_NativeDsp_nativeReset(
