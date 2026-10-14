@@ -12,7 +12,8 @@ import tempfile
 import zipfile
 import zlib
 
-assert __debug__, 'Python -O disables the safety assertions'
+if not __debug__:
+    raise RuntimeError('Python -O disables safety assertions')
 BASE = Path(__file__).resolve().parents[1] / 'app/src/main/cpp'
 SEED = 20261014
 
