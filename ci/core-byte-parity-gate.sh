@@ -9,5 +9,7 @@ javac -d "$tmp/classes" app/src/main/java/io/rafaelia/audiostudio/{LowSha256,Rfa
 java -cp "$tmp/classes" io.rafaelia.audiostudio.CoreByteOracle "$tmp"
 cmp "$tmp/c.zip" "$tmp/java.zip"
 cmp "$tmp/c.sha256" "$tmp/java.sha256"
+# Reuse the existing producer; falsify ZIP32 and CRC32 without a second core.
+python3 ci/zip32-adversarial-gate.py
 echo 'C_JAVA_SHA256_AND_WHOLE_ZIP32_BYTES=PASS'
 echo 'JAVA_ORACLE=HOST_TEST_ONLY_NOT_CORE_DEPENDENCY'
