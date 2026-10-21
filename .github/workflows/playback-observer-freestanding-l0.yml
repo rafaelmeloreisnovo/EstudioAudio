@@ -1,0 +1,30 @@
+name: "Playback Observer | Freestanding core scoped"
+on:
+  pull_request:
+    paths:
+      - "app/src/main/cpp/rfa_playback_observer_core.c"
+      - "app/src/main/cpp/rfa_playback_observer_core.h"
+      - "native/tests/playback_observer_*.c"
+      - "ci/playback-observer-core-gate.sh"
+      - ".github/workflows/playback-observer-freestanding-l0.yml"
+permissions:
+  contents: read
+jobs:
+  freestanding-observer:
+    name: "Observer L0 native host boundary (not physical audio)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact PR source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Native C anti-regression and undefined-symbol gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash ci/playback-observer-core-gate.sh
+          echo "PHYSICAL_DEVICE=NOT_RUN"
+          echo "MICROPHONE_OR_SPEAKER_REPLAY=NOT_RUN"
+          echo "CLAIM_ALLOWED=false"
