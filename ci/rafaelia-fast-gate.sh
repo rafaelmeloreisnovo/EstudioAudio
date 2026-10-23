@@ -33,6 +33,7 @@ bash ci/audio-session-gate.sh
 bash ci/zipraf-lowlevel-gate.sh
 bash ci/wave-lab-gate.sh
 bash ci/tele-tts-core-gate.sh
+bash ci/playback-observer-core-gate.sh
 bash ci/ptbr-core-gate.sh
 python3 ci/robotic-ptbr-routing-gate.py
 bash ci/timbre-share-core-gate.sh
@@ -61,6 +62,7 @@ clang "${cflags[@]}" native/tests/manifold_smoke.c \
   app/src/main/cpp/rfa_lms_core.c \
   app/src/main/cpp/rfa_biquad_core.c \
   app/src/main/cpp/rfa_voice_core.c \
+  app/src/main/cpp/rfa_playback_observer_core.c \
   app/src/main/cpp/rfa_measure_core.c \
   app/src/main/cpp/rfa_rac1_core.c \
   app/src/main/cpp/rfa_audio_format_core.c \

@@ -110,6 +110,7 @@ quality() {
     app/src/main/cpp/rfa_lms_core.c \
     app/src/main/cpp/rfa_biquad_core.c \
     app/src/main/cpp/rfa_voice_core.c \
+    app/src/main/cpp/rfa_playback_observer_core.c \
     app/src/main/cpp/rfa_measure_core.c \
     app/src/main/cpp/rfa_rac1_core.c \
     app/src/main/cpp/rfa_audio_format_core.c \
@@ -120,9 +121,11 @@ quality() {
     app/src/main/cpp/rfa_verbo_core.c -o verbo_smoke
   ./verbo_smoke
 
+  bash ci/playback-observer-core-gate.sh
+
   local core_c core_all
-  core_c='app/src/main/cpp/rfa_zip32_core.c app/src/main/cpp/rfa_digest_core.c app/src/main/cpp/rfa_bit_stack_core.c app/src/main/cpp/dsp_core.c app/src/main/cpp/meter_core.c app/src/main/cpp/rfa_wave_core.c app/src/main/cpp/rfa_matrix_core.c app/src/main/cpp/rfa_block_core.c app/src/main/cpp/rfa_container_core.c app/src/main/cpp/rfa_fir_core.c app/src/main/cpp/rfa_time_core.c app/src/main/cpp/rfa_lms_core.c app/src/main/cpp/rfa_biquad_core.c app/src/main/cpp/rfa_voice_core.c app/src/main/cpp/rfa_tele_tts_core.c app/src/main/cpp/rfa_ptbr_core.c app/src/main/cpp/rfa_timbre_core.c app/src/main/cpp/rfa_measure_core.c app/src/main/cpp/rfa_rac1_core.c app/src/main/cpp/rfa_audio_format_core.c app/src/main/cpp/rfa_verbo_core.c'
-  core_all="$core_c app/src/main/cpp/rfa_zip32_core.h app/src/main/cpp/rfa_crc32_internal.h app/src/main/cpp/rfa_digest_core.h app/src/main/cpp/rfa_bit_stack_core.h app/src/main/cpp/dsp_core.h app/src/main/cpp/meter_core.h app/src/main/cpp/rfa_wave_core.h app/src/main/cpp/rfa_matrix_core.h app/src/main/cpp/rfa_block_core.h app/src/main/cpp/rfa_container_core.h app/src/main/cpp/rfa_fir_core.h app/src/main/cpp/rfa_time_core.h app/src/main/cpp/rfa_lms_core.h app/src/main/cpp/rfa_biquad_core.h app/src/main/cpp/rfa_voice_core.h app/src/main/cpp/rfa_tele_tts_core.h app/src/main/cpp/rfa_ptbr_core.h app/src/main/cpp/rfa_timbre_core.h app/src/main/cpp/rfa_measure_core.h app/src/main/cpp/rfa_rac1_core.h app/src/main/cpp/rfa_audio_format_core.h app/src/main/cpp/rfa_sine_q15.h app/src/main/cpp/rfa_core_types.h app/src/main/cpp/rfa_verbo_core.h"
+  core_c='app/src/main/cpp/rfa_zip32_core.c app/src/main/cpp/rfa_digest_core.c app/src/main/cpp/rfa_bit_stack_core.c app/src/main/cpp/dsp_core.c app/src/main/cpp/meter_core.c app/src/main/cpp/rfa_wave_core.c app/src/main/cpp/rfa_matrix_core.c app/src/main/cpp/rfa_block_core.c app/src/main/cpp/rfa_container_core.c app/src/main/cpp/rfa_fir_core.c app/src/main/cpp/rfa_time_core.c app/src/main/cpp/rfa_lms_core.c app/src/main/cpp/rfa_biquad_core.c app/src/main/cpp/rfa_voice_core.c app/src/main/cpp/rfa_playback_observer_core.c app/src/main/cpp/rfa_tele_tts_core.c app/src/main/cpp/rfa_ptbr_core.c app/src/main/cpp/rfa_timbre_core.c app/src/main/cpp/rfa_measure_core.c app/src/main/cpp/rfa_rac1_core.c app/src/main/cpp/rfa_audio_format_core.c app/src/main/cpp/rfa_verbo_core.c'
+  core_all="$core_c app/src/main/cpp/rfa_zip32_core.h app/src/main/cpp/rfa_crc32_internal.h app/src/main/cpp/rfa_digest_core.h app/src/main/cpp/rfa_bit_stack_core.h app/src/main/cpp/dsp_core.h app/src/main/cpp/meter_core.h app/src/main/cpp/rfa_wave_core.h app/src/main/cpp/rfa_matrix_core.h app/src/main/cpp/rfa_block_core.h app/src/main/cpp/rfa_container_core.h app/src/main/cpp/rfa_fir_core.h app/src/main/cpp/rfa_time_core.h app/src/main/cpp/rfa_lms_core.h app/src/main/cpp/rfa_biquad_core.h app/src/main/cpp/rfa_voice_core.h app/src/main/cpp/rfa_playback_observer_core.h app/src/main/cpp/rfa_tele_tts_core.h app/src/main/cpp/rfa_ptbr_core.h app/src/main/cpp/rfa_timbre_core.h app/src/main/cpp/rfa_measure_core.h app/src/main/cpp/rfa_rac1_core.h app/src/main/cpp/rfa_audio_format_core.h app/src/main/cpp/rfa_sine_q15.h app/src/main/cpp/rfa_core_types.h app/src/main/cpp/rfa_verbo_core.h"
 
   if grep -nRE '^[[:space:]]*#include[[:space:]]*<' $core_all; then
     fail 'system header reached the freestanding core'
@@ -178,21 +181,21 @@ architecture() {
   nm="$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-nm"
   flags='-std=c11 -O3 -ffreestanding -fno-builtin -nostdinc -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -fno-common -fno-optimize-sibling-calls -fvisibility=hidden -ffunction-sections -fdata-sections -Wall -Wextra -Werror -Iapp/src/main/cpp'
 
-  for src in rfa_zip32_core rfa_digest_core rfa_bit_stack_core dsp_core meter_core rfa_wave_core rfa_matrix_core rfa_block_core rfa_container_core rfa_fir_core rfa_time_core rfa_lms_core rfa_biquad_core rfa_voice_core rfa_tele_tts_core rfa_ptbr_core rfa_timbre_core rfa_measure_core rfa_rac1_core rfa_audio_format_core rfa_verbo_core; do
+  for src in rfa_zip32_core rfa_digest_core rfa_bit_stack_core dsp_core meter_core rfa_wave_core rfa_matrix_core rfa_block_core rfa_container_core rfa_fir_core rfa_time_core rfa_lms_core rfa_biquad_core rfa_voice_core rfa_playback_observer_core rfa_tele_tts_core rfa_ptbr_core rfa_timbre_core rfa_measure_core rfa_rac1_core rfa_audio_format_core rfa_verbo_core; do
     "$cc" --target=armv7a-linux-androideabi29 $flags -c "app/src/main/cpp/$src.c" -o "$src.armv7.o"
     "$nm" -u "$src.armv7.o" > "$src.armv7.undefined"
     test ! -s "$src.armv7.undefined" || { cat "$src.armv7.undefined"; fail "ARMV7_UNDEFINED=$src"; }
   done
 
   : > abi.actual
-  for src in rfa_zip32_core rfa_digest_core rfa_bit_stack_core dsp_core meter_core rfa_wave_core rfa_matrix_core rfa_block_core rfa_container_core rfa_fir_core rfa_time_core rfa_lms_core rfa_biquad_core rfa_voice_core rfa_tele_tts_core rfa_ptbr_core rfa_timbre_core rfa_measure_core rfa_rac1_core rfa_audio_format_core rfa_verbo_core; do
+  for src in rfa_zip32_core rfa_digest_core rfa_bit_stack_core dsp_core meter_core rfa_wave_core rfa_matrix_core rfa_block_core rfa_container_core rfa_fir_core rfa_time_core rfa_lms_core rfa_biquad_core rfa_voice_core rfa_playback_observer_core rfa_tele_tts_core rfa_ptbr_core rfa_timbre_core rfa_measure_core rfa_rac1_core rfa_audio_format_core rfa_verbo_core; do
     "$nm" --defined-only --extern-only "$src.armv7.o" | awk -v src="$src" '{print src ":" $NF}' >> abi.actual
   done
   sort -o abi.actual abi.actual
   grep -v '^[[:space:]]*#' native/abi/public_symbols_v1.txt | grep -v '^[[:space:]]*$' | sort > abi.expected
   diff -u abi.expected abi.actual
 
-  for src in rfa_zip32_core rfa_digest_core rfa_bit_stack_core dsp_core meter_core rfa_wave_core rfa_matrix_core rfa_block_core rfa_container_core rfa_fir_core rfa_time_core rfa_lms_core rfa_biquad_core rfa_voice_core rfa_tele_tts_core rfa_ptbr_core rfa_timbre_core rfa_measure_core rfa_rac1_core rfa_audio_format_core rfa_verbo_core; do
+  for src in rfa_zip32_core rfa_digest_core rfa_bit_stack_core dsp_core meter_core rfa_wave_core rfa_matrix_core rfa_block_core rfa_container_core rfa_fir_core rfa_time_core rfa_lms_core rfa_biquad_core rfa_voice_core rfa_playback_observer_core rfa_tele_tts_core rfa_ptbr_core rfa_timbre_core rfa_measure_core rfa_rac1_core rfa_audio_format_core rfa_verbo_core; do
     "$cc" --target=aarch64-linux-android29 $flags -c "app/src/main/cpp/$src.c" -o "$src.aarch64.o"
     "$nm" -u "$src.aarch64.o" > "$src.aarch64.undefined"
     test ! -s "$src.aarch64.undefined" || { cat "$src.aarch64.undefined"; fail "AARCH64_UNDEFINED=$src"; }
@@ -261,10 +264,16 @@ binary_receipt() {
   require_env RFA_SOURCE_SHA
   require_env RFA_CI_RUN_ID
 
-  local apk apk_sha entry_manifest entry_manifest_sha entry_count receipt entry digest
+  local apk apk_sha apk_bytes apk_budget_state entry_manifest entry_manifest_sha entry_count receipt entry digest
   apk='app/build/outputs/apk/debug/app-debug.apk'
   test -f "$apk" || fail 'DEBUG_APK=TOKEN_VAZIO'
   apk_sha="$(sha256sum "$apk" | awk '{print $1}')"
+  apk_bytes="$(wc -c < "$apk" | tr -d '[:space:]')"
+  test "$apk_bytes" -gt 0 || fail 'APK_SIZE_BYTES=TOKEN_VAZIO'
+  apk_budget_state='OVER_1MIB_REFERENCE_REVIEW'
+  if test "$apk_bytes" -le 1048576; then apk_budget_state='WITHIN_1MIB_REFERENCE'; fi
+  echo "APK_SIZE_BYTES=$apk_bytes"
+  echo "APK_1MIB_REFERENCE=$apk_budget_state"
   entry_manifest="$RUNNER_TEMP/apk-entry-sha256.txt"
   receipt="$RUNNER_TEMP/binary_origin_receipt_v1.txt"
   : > "$entry_manifest"
@@ -286,6 +295,9 @@ pipeline=RAFAELIA_AUDIO_START_V1
 source_sha=$RFA_SOURCE_SHA
 run_id=$RFA_CI_RUN_ID
 apk_sha256=$apk_sha
+apk_size_bytes=$apk_bytes
+apk_size_reference_bytes=1048576
+apk_size_reference_state=$apk_budget_state
 apk_entry_manifest_sha256=$entry_manifest_sha
 apk_entry_count=$entry_count
 classes.dex=GENERATED_DEX_MIXED_PROJECT_BYTECODE_PLATFORM_REFERENCES
