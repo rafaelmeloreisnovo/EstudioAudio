@@ -281,7 +281,12 @@ public final class MainActivity extends Activity {
         Button physicalObserver = button("Observador físico · roteiro");
         physicalObserver.setOnClickListener(v -> {
             guide.stop();
-            scriptEdit.setText(ComplexNetworkNarrationPreset.physicalPlaybackObserverScript());
+            scriptEdit.setText("Cole aqui a resposta que será lida por um TTS externo. "
+                + "Reproduza o áudio em outro aplicativo, como GPT, DeepSeek ou Claude, "
+                + "e grave pelo botão físico do EstudioAudio. "
+                + "O observador mede pausas, silêncios, glitches e mudanças acústicas candidatas. "
+                + "Ele não identifica pessoa, sexo ou voz humana. "
+                + "Qualquer mudança de tom ou leitor fica como TOKEN_VAZIO até existir evidência física revisável.");
             status.setText("Observador físico: cole texto, toque TTS externo, grave pelo app. Voz/pessoa/sexo NÃO CLAIMED.");
         });
         panel.addView(physicalObserver);

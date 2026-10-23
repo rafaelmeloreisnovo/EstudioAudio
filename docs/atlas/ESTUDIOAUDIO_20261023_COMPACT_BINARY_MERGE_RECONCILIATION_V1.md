@@ -62,3 +62,10 @@ R3=<F_ok: reproducible source delta, native CI gates and size receipt route; F_g
 - Resolution: relocate `.github/workflows/playback-observer-freestanding-l0.yml` to `ci/archive/workflows/playback-observer-freestanding-l0.yml` preserving byte-identical blob `37ece4241b1273110eb917345fb8db853d5461ca`. Git tracks the move; no historical material is erased. The original C tests remain invoked by `ci/rafaelia-fast-gate.sh` and `ci/rafaelia-pipeline.sh quality` via `ci/playback-observer-core-gate.sh`.
 - Deliberately **do not** relax `ACTIVE_WORKFLOW_COUNT=1`; changing the topology invariant would hide the regression. Next: new exact-HEAD full CI, inspect APK and binary size receipt, then host/Android evidence separately.
 - Status at hotfix creation: successor exact-head full CI = `NOT_OBSERVED`. Promotion and release remain blocked; issue #66 remains open.
+
+## Successor — narration V2 immutability falsifier
+
+- Second full CI: run `39899696059` passed topology, Java/Android source tasks and audio-session gate, but stopped in `40 · quality capability` with `NARRATION_V2_LOCK`: pinned blob `0f48f96e5d6512282fa859c122bbf96887aadb67` vs modified blob `03877c62510184f323502ebd552c6d74256a9ab2`.
+- Root cause: observer preset method was appended to the V2 narration file. This changed its source hash despite preserving existing text. Do not disable or repin the lock.
+- Minimal resolution: restore the exact original V2 file/blob `0f48f96e5d6512282fa859c122bbf96887aadb67`, inline the same observer-script constant in existing `MainActivity` click handler; no extra Java class, permission, runtime component or L0 C mutation.
+- Next CI exact-HEAD needed: verify lock and full build to APK, then read size/ABI/physical separation. Promotion remains blocked.

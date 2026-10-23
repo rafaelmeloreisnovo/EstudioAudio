@@ -37,13 +37,4 @@ final class ComplexNetworkNarrationPreset {
                 + "Precisamos observar o que acontece quando elas interagem, "
                 + "e aprender com o que ainda não sabíamos.";
     }
-    static String physicalPlaybackObserverScript() {
-        return "Cole aqui a resposta que será lida por um TTS externo. "
-                + "Reproduza o áudio em outro aplicativo, como GPT, DeepSeek ou Claude, "
-                + "e grave pelo botão físico do EstudioAudio. "
-                + "O observador mede pausas, silêncios, glitches e mudanças acústicas candidatas. "
-                + "Ele não identifica pessoa, sexo ou voz humana. "
-                + "Qualquer mudança de tom ou leitor fica como TOKEN_VAZIO até existir evidência física revisável.";
-    }
-
 }
