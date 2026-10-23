@@ -54,3 +54,11 @@ The new UI button inserts a script; it does NOT invoke `rfa_playback_observe_mon
 H1: smallest additive merge retains main's features and introduces observer source with no new APK packaging method. H0/falsifiers: CI failures, missing ABI symbols, altered PT-BR scripts, unexpected APK size, lost timbre flow or physical false claims. The result of a source-only merge is NOT a released or experimentally verified audio feature.
 
 R3=<F_ok: reproducible source delta, native CI gates and size receipt route; F_gap: exact-head and physical tests, active provider enforcement, independent review; F_next: inspect CI on merged PR HEAD, compare bytes and ELF, then opt-in JNI and real-device receipt without automatic promotion>
+
+## Successor — topology falsifier and minimal fix
+
+- First CI: run `39899333240`, job `gate / build` failed at `30 · single-root topology` BEFORE compiling APK: `ACTIVE_WORKFLOW_COUNT=2 expected=1`.
+- Root cause: the original observer PR contributed a second active YAML under `.github/workflows/` although `START.yml` is the repository's intentionally single active workflow. The observer source-host smoke separately passed in run `39899333365`, but this did not bypass the topology gate.
+- Resolution: relocate `.github/workflows/playback-observer-freestanding-l0.yml` to `ci/archive/workflows/playback-observer-freestanding-l0.yml` preserving byte-identical blob `37ece4241b1273110eb917345fb8db853d5461ca`. Git tracks the move; no historical material is erased. The original C tests remain invoked by `ci/rafaelia-fast-gate.sh` and `ci/rafaelia-pipeline.sh quality` via `ci/playback-observer-core-gate.sh`.
+- Deliberately **do not** relax `ACTIVE_WORKFLOW_COUNT=1`; changing the topology invariant would hide the regression. Next: new exact-HEAD full CI, inspect APK and binary size receipt, then host/Android evidence separately.
+- Status at hotfix creation: successor exact-head full CI = `NOT_OBSERVED`. Promotion and release remain blocked; issue #66 remains open.
