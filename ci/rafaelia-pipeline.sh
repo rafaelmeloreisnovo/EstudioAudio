@@ -122,6 +122,7 @@ quality() {
   ./verbo_smoke
 
   bash ci/playback-observer-core-gate.sh
+  bash ci/playback-loopback-contract-gate.sh
 
   local core_c core_all
   core_c='app/src/main/cpp/rfa_zip32_core.c app/src/main/cpp/rfa_digest_core.c app/src/main/cpp/rfa_bit_stack_core.c app/src/main/cpp/dsp_core.c app/src/main/cpp/meter_core.c app/src/main/cpp/rfa_wave_core.c app/src/main/cpp/rfa_matrix_core.c app/src/main/cpp/rfa_block_core.c app/src/main/cpp/rfa_container_core.c app/src/main/cpp/rfa_fir_core.c app/src/main/cpp/rfa_time_core.c app/src/main/cpp/rfa_lms_core.c app/src/main/cpp/rfa_biquad_core.c app/src/main/cpp/rfa_voice_core.c app/src/main/cpp/rfa_playback_observer_core.c app/src/main/cpp/rfa_tele_tts_core.c app/src/main/cpp/rfa_ptbr_core.c app/src/main/cpp/rfa_timbre_core.c app/src/main/cpp/rfa_measure_core.c app/src/main/cpp/rfa_rac1_core.c app/src/main/cpp/rfa_audio_format_core.c app/src/main/cpp/rfa_verbo_core.c'

@@ -13,6 +13,8 @@ final class SpectrumView extends View {
 
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final long[] bands = new long[16];
+    private long sharedMax;
+
 
     SpectrumView(Context context) {
         super(context);
@@ -21,6 +23,13 @@ final class SpectrumView extends View {
     }
 
     void setBands(long[] values) {
+        setBands(values, 0L);
+    }
+
+    // Share one scale across reference and microphone to prevent misleading
+    // independently normalized comparison graphs. Existing callers unchanged.
+    void setBands(long[] values, long referenceMax) {
+        sharedMax = referenceMax > 0L ? referenceMax : 0L;
         int n = Math.min(values.length, bands.length);
         for (int i = 0; i < n; i++) bands[i] = values[i];
         for (int i = n; i < bands.length; i++) bands[i] = 0;
@@ -30,8 +39,10 @@ final class SpectrumView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        long max = 1;
-        for (long v : bands) if (v > max) max = v;
+        long max = sharedMax > 0L ? sharedMax : 1L;
+        if (sharedMax == 0L) {
+            for (long v : bands) if (v > max) max = v;
+        }
 
         float w = getWidth();
         float h = getHeight();

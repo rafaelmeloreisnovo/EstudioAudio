@@ -95,6 +95,12 @@ final class NativeDsp {
             short[] response, int responseCount,
             int minLag, int maxLag, long[] output);
 
+    // Physical AudioRecord PCM -> freestanding C observer; no microphone access in C.
+    // 13 long output fields, zeroed and rejected on invalid bounds.
+    static final int OBSERVER_OUTPUT_LONGS = 13;
+    static native int nativePlaybackObserve(
+            short[] samples, int count, int sampleRate, long[] output);
+
     static native int nativeSweepBandProfile(
             short[] reference, int referenceCount, int referenceOffset,
             short[] response, int responseCount, int responseOffset,

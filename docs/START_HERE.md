@@ -1,5 +1,7 @@
 # START HERE — EstudioAudio
 
+> **2026-10-23 — Lab A/B industrial (SOURCE DRAFT, NO PROMOTION):** [Painel orquestrado sweep → microfone → 16 janelas → observador JNI/C → CFR + SHA](atlas/ESTUDIOAUDIO_20261023_AB_LOOPBACK_INDUSTRIAL_GATE_V1.md). Referencia: main@3b6b495c.../PR#64 MERGED; provider P0 e independent physical replay pendentes. Nao confundir janela temporal com FFT/SPL absoluto.
+
 > **2026-10-23 — PR #64, reconstrução freestanding + orçamento do binário:** [Contrato e matriz de evidência para integração sem regressão](atlas/ESTUDIOAUDIO_20261023_COMPACT_BINARY_MERGE_RECONCILIATION_V1.md). Full CI constrói APK e registra bytes e SHA; quick CI não é APK. Historical physical APK execution = USER_REPORTED; same-HEAD physical = EVIDENCE_MISSING. Não renomear ABI/package apenas para padronizar marca.
 
 > **2026-10-22 — auditoria por fonte (DRAFT, sem promoção):** [Medidor BS.1770 / ZIP32–ZIPRAF / PT-BR–timbre: matriz P0–P3](atlas/ESTUDIOAUDIO_20261022_AUDIT_MEDIDOR_ZIP32_VOZ_P0P3.md). Cabeçalho atual de referência deriva do GitHub, não dos SHAs antigos listados abaixo. O relatório local fornecido pelo autor sobre execução do fast gate é USER_REPORTED; nenhuma execução neste novo PR, claim_allowed=false.

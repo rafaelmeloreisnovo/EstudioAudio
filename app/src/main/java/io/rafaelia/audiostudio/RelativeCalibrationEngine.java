@@ -38,6 +38,12 @@ final class RelativeCalibrationEngine {
 
     private RelativeCalibrationEngine() {}
 
+    interface StageListener { void phase(String phase); }
+
+    private static void phase(StageListener listener, String value) {
+        if (listener != null) listener.phase(value);
+    }
+
     static final class Result {
         final File cfrFile;
         final int capturedFrames;
@@ -48,6 +54,7 @@ final class RelativeCalibrationEngine {
         final String inputSource;
         final long[] sweepProfile;
         final long[] decayProfile;
+        final long[] observerMetrics;
 
         Result(
                 File cfrFile,
@@ -58,7 +65,8 @@ final class RelativeCalibrationEngine {
                 long responseEnergy,
                 String inputSource,
                 long[] sweepProfile,
-                long[] decayProfile) {
+                long[] decayProfile,
+                long[] observerMetrics) {
             this.cfrFile = cfrFile;
             this.capturedFrames = capturedFrames;
             this.bestLag = bestLag;
@@ -68,6 +76,7 @@ final class RelativeCalibrationEngine {
             this.inputSource = inputSource;
             this.sweepProfile = sweepProfile;
             this.decayProfile = decayProfile;
+            this.observerMetrics = observerMetrics;
         }
 
         long latencyMicros() {
@@ -78,6 +87,23 @@ final class RelativeCalibrationEngine {
             if (sweepProfile == null ||
                     sweepProfile.length < NativeDsp.SWEEP_PROFILE_OUTPUT_LONGS) return 0;
             return (int) sweepProfile[NativeDsp.SWEEP_PROFILE_BANDS * 3];
+        }
+
+        // These are 16 sweep time-slices with evolving tone frequency,
+        // NOT a fixed-frequency FFT or a calibrated spectral transfer.
+        long[] referenceBandEnergy() {
+            long[] values = new long[NativeDsp.SWEEP_PROFILE_BANDS];
+            if (sweepProfile == null) return values;
+            for (int i = 0; i < values.length; ++i) values[i] = sweepProfile[i];
+            return values;
+        }
+
+        long[] responseBandEnergy() {
+            long[] values = new long[NativeDsp.SWEEP_PROFILE_BANDS];
+            if (sweepProfile == null) return values;
+            int base = NativeDsp.SWEEP_PROFILE_BANDS;
+            for (int i = 0; i < values.length; ++i) values[i] = sweepProfile[base + i];
+            return values;
         }
 
         long[] powerRatiosQ20() {
@@ -118,6 +144,12 @@ final class RelativeCalibrationEngine {
     }
 
     static Result run(Context context, File cfrTarget) throws Exception {
+        return run(context, cfrTarget, null);
+    }
+
+    static Result run(Context context, File cfrTarget,
+                      StageListener observer) throws Exception {
+        phase(observer, "01_REFERENCE · gerar sync + sweep C");
         int excitationFrames = SYNC_FRAMES + GUARD_FRAMES + SWEEP_FRAMES;
         int captureCapacity =
                 PRE_FRAMES + excitationFrames + POST_FRAMES + MAX_LAG;
@@ -147,6 +179,7 @@ final class RelativeCalibrationEngine {
         for (int i = 0; i < GUARD_FRAMES; ++i) excitation[cursor++] = 0;
         for (int i = 0; i < SWEEP_FRAMES; ++i) excitation[cursor++] = sweep[i];
 
+        phase(observer, "02_PLATFORM · permissao; AudioRecord + AudioTrack");
         InputHandle input = createInput();
         AudioTrack output = createOutput();
         int[] playbackError = new int[]{0};
@@ -213,6 +246,7 @@ final class RelativeCalibrationEngine {
             output.release();
         }
 
+        phase(observer, "03_ALIGN · correlacao nativa; captura encerrada");
         long[] transfer = new long[5];
         int searchMax = PRE_FRAMES + MAX_LAG;
         if (searchMax >= captured) searchMax = captured - 1;
@@ -235,6 +269,7 @@ final class RelativeCalibrationEngine {
         int bestLag = (int) transfer[3];
         int referenceSweepOffset = SYNC_FRAMES + GUARD_FRAMES;
         int responseSweepOffset = bestLag + SYNC_FRAMES + GUARD_FRAMES;
+        phase(observer, "04_COMPARE · janelas de sweep/energia relativa");
         long[] sweepProfile = new long[NativeDsp.SWEEP_PROFILE_OUTPUT_LONGS];
         int sweepProfileOk = NativeDsp.nativeSweepBandProfile(
                 excitation, excitation.length, referenceSweepOffset,
@@ -262,6 +297,15 @@ final class RelativeCalibrationEngine {
             for (int i = 5; i <= 11; ++i) decayProfile[i] = -1L;
         }
 
+        phase(observer, "05_OBSERVER · PCM real do microfone -> JNI -> C");
+        long[] observerMetrics = new long[NativeDsp.OBSERVER_OUTPUT_LONGS];
+        if (NativeDsp.nativePlaybackObserve(
+                response, captured, SAMPLE_RATE, observerMetrics) != 1 ||
+                observerMetrics[3] != captured) {
+            throw new IOException("observer JNI rejected captured PCM");
+        }
+
+        phase(observer, "06_CFR · preservar referencia, captura e 16 faixas");
         CalibrationContainerWriter.writeRelativeCfr(
                 cfrTarget,
                 excitation,
@@ -289,7 +333,8 @@ final class RelativeCalibrationEngine {
                 transfer[2],
                 input.sourceName,
                 sweepProfile,
-                decayProfile);
+                decayProfile,
+                observerMetrics);
     }
 
     private static final class InputHandle {

@@ -310,6 +310,32 @@ final class AssuranceZiprafWriter {
                         ",\"peak_delta\":" + f6(magnetometer.peakDeltaUt) +
                         ",\"unit\":\"uT\",\"scale\":\"ANDROID_SENSOR_REPORTED\"}";
 
+        // Industrial A/B receipt: sweep TIME windows, not calibrated FFT bands.
+        // CFR stores reference/response PCM; ZIPRAF references CFR by SHA256.
+        String physicalComparison = "{\"state\":\"NOT_RUN\"," +
+                "\"observer_jni\":\"NOT_RUN\",\"independent_replay\":\"NOT_RUN\"}";
+        if (calibration != null && calibration.observerMetrics != null &&
+                calibration.observerMetrics.length == NativeDsp.OBSERVER_OUTPUT_LONGS) {
+            long[] obs = calibration.observerMetrics;
+            physicalComparison = "{\"state\":\"OBSERVED_RELATIVE_UNCALIBRATED\"," +
+                    "\"jni_boundary\":\"C_OBSERVER_EXECUTED_ON_MIC_PCM\"," +
+                    "\"analyzed_samples\":" + obs[3] +
+                    ",\"silence_runs\":" + obs[6] +
+                    ",\"glitch_candidates\":" + obs[8] +
+                    ",\"acoustic_shift_candidates\":" + obs[9] +
+                    ",\"observer_flags\":" + obs[10] +
+                    ",\"reference_16_sweep_window_energy\":" +
+                        numbers16(calibration.referenceBandEnergy()) +
+                    ",\"response_16_sweep_window_energy\":" +
+                        numbers16(calibration.responseBandEnergy()) +
+                    ",\"response_over_reference_q20\":" +
+                        numbers16(calibration.powerRatiosQ20()) +
+                    ",\"frequency_semantics\":\"TIME_SLICED_SWEEP_NOT_FFT\"," +
+                    "\"absolute_spl\":\"PENDING_PHYSICAL_REFERENCE\"," +
+                    "\"device_reproduction\":\"OBSERVED_LOCAL_UNATTESTED\"," +
+                    "\"independent_replay\":\"NOT_RUN\"}";
+        }
+
         String cal;
         if (calibration == null) {
             cal = "{\"state\":\"NOT_RUN\",\"absolute_spl\":\"PENDING_PHYSICAL_REFERENCE\"}";
@@ -329,10 +355,22 @@ final class AssuranceZiprafWriter {
                 "  \"delta_behavior\":{\n" +
                 "    \"vibration\":" + vib + ",\n" +
                 "    \"magnetic\":" + mag + ",\n" +
-                "    \"relative_room\":" + cal + "\n" +
+                "    \"relative_room\":" + cal + ",\n" +
+                "    \"reference_capture_comparison\":" + physicalComparison + "\n" +
                 "  },\n" +
                 "  \"metric_validity_policy\":\"availability+unit+execution+finite-value+required-reference; unavailable sensor is not a metric failure; no external standard audit inferred\"\n" +
                 "}\n";
+    }
+
+    private static String numbers16(long[] values) {
+        if (values == null || values.length < 16) return "[]";
+        StringBuilder output = new StringBuilder(290);
+        output.append('[');
+        for (int i = 0; i < 16; ++i) {
+            if (i > 0) output.append(',');
+            output.append(values[i]);
+        }
+        return output.append(']').toString();
     }
 
     private static String relationsJson(
