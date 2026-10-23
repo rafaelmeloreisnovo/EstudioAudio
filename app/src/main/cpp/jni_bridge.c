@@ -15,6 +15,7 @@
 #include "rfa_timbre_core.h"
 #include "rfa_digest_core.h"
 #include "rfa_zip32_core.h"
+#include "rfa_playback_observer_core.h"
 
 /*
  * Platform-owned instances.
@@ -281,6 +282,47 @@ Java_io_rafaelia_audiostudio_NativeDsp_nativeMeterGain(
     return (jlong)meter_state_gain_q30(&g_meter_state,
                                        (rfa_u64)targetEnergyQ36,
                                        (rfa_u64)ceilingQ16);
+}
+
+/* Android-only, bounded PCM16 bridge. Native observer owns no audio device,
+ * heap or persistent state; arrays and lifecycle remain Java-owned.
+ * Output: text_bytes, words, pauses, analyzed, non_silent, zero_crossings,
+ * silence_runs, max_silence_run, glitch, shifts, flags, energy, peak. */
+JNIEXPORT jint JNICALL
+Java_io_rafaelia_audiostudio_NativeDsp_nativePlaybackObserve(
+        JNIEnv *env, jclass clazz, jshortArray input,
+        jint count, jint sampleRate, jlongArray output) {
+    rfa_playback_observation report;
+    jshort *data;
+    jsize length;
+    jlong out[13];
+    (void)clazz;
+    if (!input || !output || count <= 0 || count > 1048576 ||
+        sampleRate < 8000 || sampleRate > 192000) return 0;
+    length = (*env)->GetArrayLength(env, input);
+    if (count > length || (*env)->GetArrayLength(env, output) != 13) return 0;
+    data = (*env)->GetShortArrayElements(env, input, (jboolean *)0);
+    if (!data) return 0;
+    int ok = rfa_playback_observe_mono(
+            (const rfa_i16 *)data, (int)count, (int)sampleRate,
+            (const rfa_u8 *)0, 0U, &report);
+    (*env)->ReleaseShortArrayElements(env, input, data, JNI_ABORT);
+    if (!ok) return 0;
+    out[0] = (jlong)report.text_bytes;
+    out[1] = (jlong)report.text_words;
+    out[2] = (jlong)report.text_pause_marks;
+    out[3] = (jlong)report.analyzed_samples;
+    out[4] = (jlong)report.non_silent_samples;
+    out[5] = (jlong)report.zero_crossings;
+    out[6] = (jlong)report.silence_runs;
+    out[7] = (jlong)report.max_silence_run;
+    out[8] = (jlong)report.glitch_candidates;
+    out[9] = (jlong)report.acoustic_shift_candidates;
+    out[10] = (jlong)report.flags;
+    out[11] = (jlong)report.energy;
+    out[12] = (jlong)report.peak_abs;
+    (*env)->SetLongArrayRegion(env, output, 0, 13, out);
+    return (*env)->ExceptionCheck(env) ? 0 : 1;
 }
 
 JNIEXPORT void JNICALL

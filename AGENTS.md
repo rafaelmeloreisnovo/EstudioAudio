@@ -90,3 +90,10 @@ For every material dependency delta record:
 - Previous APK installation/playback described by the author is USER_REPORTED_HISTORICAL_EXECUTION unless an exact matching APK hash, device and receipt are present. It is not ZERO or NOT_RUN historically; it does not validate a new commit.
 - Typed absence: UNKNOWN_SOURCE, NOT_OBSERVED, NOT_RUN, NOT_IMPLEMENTED, EVIDENCE_MISSING, AUTHORITY_UNRESOLVED, CONFLICT_UNRESOLVED, NOT_APPLICABLE_WITH_REASON. Every material token must carry gate/next/evidence pointer. UNKNOWN is not zero.
 - No automatic main merge, release, license reinterpretation or PHYSICAL_PASS from source-only tests. Existing issue #66 requires native provider enforcement proof. Human/integration review remains separate from CI.
+
+## Industrial A/B playback-loopback guard — scoped draft 2026-10-23
+- Prefer existing RelativeCalibrationEngine sweep/AudioTrack/AudioRecord/CFR path. Never claim 16 sweep time windows to be a fixed-bin FFT or certified SPL.
+- Playback observer JNI must be bounded, explicit, and separate from hardware. Retain C core no libc/heap, one-flight Android session policy, timeout, rollback and same-HEAD gates.
+- UI must explicitly request microphone permission; exporting recorded CFR requires distinct user action. Never upload microphone bytes automatically or represent cache-only files as persistent evidence.
+- Downstream ZIPRAF may include metric data and SHA references to CFR; referencing the CFR hash does NOT embed its PCM bytes. Proof chain must distinguish these.
+- Reviewer roles listed in docs/atlas/ESTUDIOAUDIO_20261023_AB_LOOPBACK_INDUSTRIAL_GATE_V1.md are check responsibilities only, not claimed hires. No scientific/physical PASS until matching APK SHA, device, and independent replay.

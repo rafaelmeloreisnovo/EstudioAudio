@@ -60,6 +60,11 @@ public final class MainActivity extends Activity {
     private TextView speedLabel;
     private Spinner profileSpinner;
     private StudioWorkspaceView studioWorkspaceView;
+    // On-demand industrial A/B console; no new recorder or playback engine.
+    private TextView comparisonPipelineBox;
+    private TextView comparisonMetricsBox;
+    private SpectrumView comparisonReferenceView;
+    private SpectrumView comparisonResponseView;
     private final short[] liveWave = new short[512];
 
     private AudioRecorderEngine recorder;
@@ -350,6 +355,55 @@ public final class MainActivity extends Activity {
         });
         panel.addView(waveLab);
 
+        panel.addView(sectionLabel("LAB A/B · REPRODUZIR → CAPTAR → COMPARAR"));
+        Button abCycle = button("▶ Orquestrar teste físico / 16 faixas");
+        abCycle.setOnClickListener(v -> {
+            guide.stop();
+            if (comparisonPipelineBox != null) comparisonPipelineBox.setText(
+                    "00_PREFLIGHT · microfone + exclusao de sessoes" +
+                    "\nMETROLOGIA=RELATIVA · CAL_ABS=TOKEN_VAZIO_PHYSICAL_REFERENCE");
+            ensurePermissionAndCalibrate();
+        });
+        panel.addView(abCycle);
+        comparisonPipelineBox = new TextView(this);
+        comparisonPipelineBox.setTextSize(11f);
+        comparisonPipelineBox.setTextColor(Color.rgb(188, 200, 209));
+        comparisonPipelineBox.setPadding(dp(6), dp(6), dp(6), dp(6));
+        comparisonPipelineBox.setText(
+                "PIPELINE=READY · gerar sweep C → AudioTrack → AudioRecord → " +
+                "sync → C observer → CFR → ZIPRAF\n" +
+                "P0 DEVICE_REPLAY=NOT_RUN · P1 ABS_SPL=PENDING_PHYSICAL_REFERENCE");
+        panel.addView(comparisonPipelineBox);
+        comparisonMetricsBox = new TextView(this);
+        comparisonMetricsBox.setTextSize(11f);
+        comparisonMetricsBox.setTextColor(Color.rgb(188, 200, 209));
+        comparisonMetricsBox.setText("REF/CAPTURE=NOT_RUN · fonte/medicao/recibo separados");
+        panel.addView(comparisonMetricsBox);
+        panel.addView(sectionLabel("REFERENCIA · ENERGIA/16 JANELAS DA VARREDURA"));
+        comparisonReferenceView = new SpectrumView(this);
+        panel.addView(comparisonReferenceView);
+        panel.addView(sectionLabel("MICROFONE · ENERGIA/16 JANELAS ALINHADAS"));
+        comparisonResponseView = new SpectrumView(this);
+        panel.addView(comparisonResponseView);
+        Button showLast = button("Rever a última comparação (sem nova execução)");
+        showLast.setOnClickListener(v -> {
+            if (lastCalibrationResult == null) {
+                comparisonPipelineBox.setText(
+                        "REVIEW=NOT_RUN · execute antes o teste físico com permissão");
+                return;
+            }
+            showComparison(lastCalibrationResult);
+            comparisonPipelineBox.setText(
+                    "REVIEW=CACHED_RESULT_ONLY · não houve nova captura" +
+                    "\nCFR=REFERENCIA+CAPTURA_PRESERVADAS · SHA=ZIPRAF_PROOF_ON_DEMAND");
+        });
+        panel.addView(showLast);
+        Button persistCfr = button("Salvar CFR + SHA-256 nos Downloads");
+        persistCfr.setOnClickListener(v -> exportComparisonCfr());
+        panel.addView(persistCfr);
+        panel.addView(sectionLabel(
+                "CFR guarda áudio do microfone: exportação local explícita; sem upload"));
+
         panel.addView(sectionLabel("PCM EXPORT FORMATS"));
 
         LinearLayout exportPrimary = row();
@@ -602,6 +656,11 @@ public final class MainActivity extends Activity {
         calibrationRunning = true;
         playback.stop();
         status.setText("RELATIVE CAL · sync + sweep at conservative level…");
+        if (comparisonPipelineBox != null) {
+            comparisonPipelineBox.setText(
+                    "00_LOCK=PASS_SCOPED · AudioTrack(0.25) + AudioRecord/48kHz" +
+                    "\nMIC_PERMISSION=GRANTED · CLAIM_ALLOWED=false");
+        }
         if (studioWorkspaceView != null) {
             studioWorkspaceView.setCalibrationState(
                     "CAL=RUNNING_RELATIVE | ABS_SPL=PENDING_PHYSICAL_REFERENCE");
@@ -613,11 +672,25 @@ public final class MainActivity extends Activity {
                         getCacheDir(),
                         "rafaelia_cal_" + System.currentTimeMillis() + ".cfr");
                 RelativeCalibrationEngine.Result result =
-                        RelativeCalibrationEngine.run(this, cfr);
+                        RelativeCalibrationEngine.run(this, cfr, phase -> {
+                            runOnUiThread(() -> {
+                                if (comparisonPipelineBox != null && !isFinishing()) {
+                                    comparisonPipelineBox.setText(
+                                            "PIPELINE=" + phase +
+                                            "\nFISICO=EXECUTING_LOCAL · ABS_SPL=PENDING_PHYSICAL_REFERENCE");
+                                }
+                            });
+                        });
                 lastCfr = result.cfrFile;
                 lastCalibrationResult = result;
 
                 runOnUiThread(() -> {
+                    showComparison(result);
+                    if (comparisonPipelineBox != null) comparisonPipelineBox.setText(
+                            "PIPELINE=CAPTURED_AND_ANALYZED_RELATIVE" +
+                            "\nREF/CAPTURE=BUFFERED_IN_CFR · observer=JNI_C_EXECUTED" +
+                            "\nNEXT=GERAR_ZIPRAF_RECEIPT · " +
+                            "ABS_SPL=PENDING_PHYSICAL_REFERENCE · CLAIM_ALLOWED=false");
                     long rtMs = result.preferredRt60Millis();
                     String roomState = "ROOM=" + result.decayMethod() +
                             (rtMs >= 0L ? " | RT60_REL~" + rtMs + " ms" :
@@ -648,12 +721,190 @@ public final class MainActivity extends Activity {
                         studioWorkspaceView.setCalibrationAnalysis(
                                 null, 0, "ROOM=NOT_RUN_AFTER_CAL_FAIL");
                     }
+                    if (comparisonPipelineBox != null) comparisonPipelineBox.setText(
+                            "PIPELINE=FAIL_CLOSED · " + e.getClass().getSimpleName() +
+                            "\nREF/CAPTURE=NOT_PROMOTED · preserve prior CFR");
                     status.setText("Relative calibration failed · " + e.getMessage());
                 });
             } finally {
                 calibrationRunning = false;
             }
         }, "rafaelia-relative-calibration").start();
+    }
+
+    /** Display the EXISTING sweep time-window energy profile.
+     * This is not FFT spectral metrology and not certified sound pressure. */
+    private void showComparison(RelativeCalibrationEngine.Result result) {
+        if (result == null || comparisonMetricsBox == null ||
+                comparisonReferenceView == null || comparisonResponseView == null) return;
+        long[] ref = result.referenceBandEnergy();
+        long[] mic = result.responseBandEnergy();
+        long[] ratio = result.powerRatiosQ20();
+        // Both bars share an identical full-scale denominator;
+        // the Q20 ratios in the receipt carry the quantitative comparison.
+        long commonMax = 1L;
+        for (long sample : ref) if (sample > commonMax) commonMax = sample;
+        for (long sample : mic) if (sample > commonMax) commonMax = sample;
+        comparisonReferenceView.setBands(ref, commonMax);
+        comparisonResponseView.setBands(mic, commonMax);
+        long[] obs = result.observerMetrics;
+        StringBuilder box = new StringBuilder(384);
+        box.append("CAPTURE=OBSERVED_RELATIVE · input=").append(result.inputSource)
+                .append(" · 48 kHz mono")
+                .append("\nALIGN=").append(result.bestLag).append(" frames / ")
+                .append(result.latencyMicros()).append(" us")
+                .append(" · valid=").append(result.validTransferBands()).append("/16")
+                .append("\nobserver_samples=").append(obs[3])
+                .append(" · pauses=").append(obs[6])
+                .append(" · glitches_candidate=").append(obs[8])
+                .append(" · acoustic_shift_candidate=").append(obs[9])
+                .append(" · observer_flags=").append(obs[10])
+                .append("\nRATIO Q20 (mic/ref): ");
+        for (int i = 0; i < 16; ++i) {
+            if (i > 0) box.append(',');
+            box.append(ratio[i]);
+        }
+        box.append("\nBANDS=SWEEP_TIME_WINDOWS_NOT_FIXED_FREQUENCY_FFT")
+                .append("\nPHYSICAL_REFERENCE=TOKEN_VAZIO · " +
+                        "INDEPENDENT_REPLAY=NOT_RUN · CLAIM_ALLOWED=false");
+        comparisonMetricsBox.setText(box.toString());
+    }
+
+    /** Explicit Android storage edge. Source CFR remains untouched on failure.
+     * Publish only when a readback hash matches bytes copied to MediaStore. */
+    private void exportComparisonCfr() {
+        if (recorder != null || calibrationRunning || evidenceRunning ||
+                processingGate.busy() || lastCfr == null || !lastCfr.isFile() ||
+                lastCalibrationResult == null) {
+            status.setText("CFR_EXPORT_BLOCKED · encerramento da captura requerido");
+            return;
+        }
+        final File src = lastCfr;
+        final RelativeCalibrationEngine.Result observed = lastCalibrationResult;
+        String stamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
+                .format(new Date());
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.MediaColumns.DISPLAY_NAME,
+                "Rafaelia_ReferenceCapture_" + stamp + ".cfr");
+        values.put(MediaStore.MediaColumns.MIME_TYPE, "application/octet-stream");
+        values.put(MediaStore.MediaColumns.RELATIVE_PATH,
+                Environment.DIRECTORY_DOWNLOADS + "/RafaeliaAudio");
+        values.put(MediaStore.MediaColumns.IS_PENDING, 1);
+        Uri uri = getContentResolver().insert(
+                MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+        if (uri == null) {
+            status.setText("CFR_EXPORT=TOKEN_VAZIO_MEDIASTORE_DESTINATION");
+            return;
+        }
+        new Thread(() -> {
+            try {
+                byte[] block = new byte[8192];
+                LowSha256 sourceHash = new LowSha256();
+                long count = 0L;
+                try (java.io.InputStream in = new java.io.FileInputStream(src);
+                     java.io.OutputStream out =
+                             getContentResolver().openOutputStream(uri, "w")) {
+                    if (out == null) throw new java.io.IOException("MediaStore output absent");
+                    int n;
+                    while ((n = in.read(block)) != -1) {
+                        out.write(block, 0, n);
+                        sourceHash.update(block, 0, n);
+                        count += n;
+                    }
+                    out.flush();
+                }
+                String sha = shaHex(sourceHash.finish());
+                LowSha256 verify = new LowSha256();
+                long verified = 0L;
+                try (java.io.InputStream in =
+                             getContentResolver().openInputStream(uri)) {
+                    if (in == null) throw new java.io.IOException("MediaStore readback absent");
+                    int n;
+                    while ((n = in.read(block)) != -1) {
+                        verify.update(block, 0, n);
+                        verified += n;
+                    }
+                }
+                if (count == 0L || verified != count ||
+                        !sha.equals(shaHex(verify.finish()))) {
+                    throw new java.io.IOException("CFR export readback mismatch");
+                }
+                ContentValues done = new ContentValues();
+                done.put(MediaStore.MediaColumns.IS_PENDING, 0);
+                getContentResolver().update(uri, done, null, null);
+                // This receipt accompanies the exported audio in Downloads.
+                ContentValues receiptEntry = new ContentValues();
+                receiptEntry.put(MediaStore.MediaColumns.DISPLAY_NAME,
+                        "Rafaelia_ReferenceCapture_" + stamp + "_receipt.txt");
+                receiptEntry.put(MediaStore.MediaColumns.MIME_TYPE, "text/plain");
+                receiptEntry.put(MediaStore.MediaColumns.RELATIVE_PATH,
+                        Environment.DIRECTORY_DOWNLOADS + "/RafaeliaAudio");
+                receiptEntry.put(MediaStore.MediaColumns.IS_PENDING, 1);
+                Uri receiptUri = getContentResolver().insert(
+                        MediaStore.Downloads.EXTERNAL_CONTENT_URI, receiptEntry);
+                if (receiptUri == null) throw new java.io.IOException("receipt destination absent");
+                try {
+                    String version = getPackageManager().getPackageInfo(
+                            getPackageName(), 0).versionName;
+                    StringBuilder proof = new StringBuilder(840);
+                    proof.append("schema=rafaelia.acoustic-ab/v1\n")
+                            .append("source_app_version=").append(version).append('\n')
+                            .append("cfr_sha256=").append(sha).append('\n')
+                            .append("cfr_bytes=").append(count).append('\n')
+                            .append("sample_rate_hz=48000\n")
+                            .append("observer_boundary=JNI_TO_FREESTANDING_C\n")
+                            .append("observer_sample_count=").append(
+                                    observed.observerMetrics[3]).append('\n')
+                            .append("observer_silence_runs=").append(
+                                    observed.observerMetrics[6]).append('\n')
+                            .append("observer_glitch_candidates=").append(
+                                    observed.observerMetrics[8]).append('\n')
+                            .append("observer_acoustic_shift_candidates=").append(
+                                    observed.observerMetrics[9]).append('\n')
+                            .append("lag_samples=").append(observed.bestLag).append('\n')
+                            .append("valid_sweep_windows=").append(
+                                    observed.validTransferBands()).append('\n')
+                            .append("input_source=").append(observed.inputSource).append('\n')
+                            .append("frequency_semantics=TIME_SLICED_SWEEP_NOT_FFT\n")
+                            .append("recorded_pcm_privacy=USER_EXPLICIT_LOCAL_EXPORT\n")
+                            .append("absolute_spl=TOKEN_VAZIO_PHYSICAL_REFERENCE\n")
+                            .append("independent_device_review=NOT_RUN\n")
+                            .append("claim_allowed=false\n");
+                    try (java.io.OutputStream out =
+                                 getContentResolver().openOutputStream(receiptUri, "w")) {
+                        if (out == null) throw new java.io.IOException("receipt output absent");
+                        out.write(proof.toString().getBytes(
+                                java.nio.charset.StandardCharsets.UTF_8));
+                    }
+                    getContentResolver().update(receiptUri, done, null, null);
+                } catch (Exception error) {
+                    getContentResolver().delete(receiptUri, null, null);
+                    throw error;
+                }
+                final long saved = count;
+                runOnUiThread(() -> status.setText(
+                        "CFR+RECEIPT SAVED · Downloads/RafaeliaAudio\n" +
+                        "bytes=" + saved + " sha256=" + sha +
+                        "\nDATA=LOCAL_ONLY · CLAIM_ALLOWED=false"));
+            } catch (Exception error) {
+                // The untrusted or incomplete new export is rolled back;
+                // original captured CFR is preserved.
+                runOnUiThread(() -> status.setText(
+                        "CFR_EXPORT_FAIL_CLOSED · original cache preserved · " +
+                                error.getClass().getSimpleName()));
+            }
+        }, "rafaelia-cfr-export").start();
+    }
+
+    private static String shaHex(byte[] bytes) {
+        final char[] hex = "0123456789abcdef".toCharArray();
+        char[] chars = new char[bytes.length * 2];
+        for (int i = 0; i < bytes.length; ++i) {
+            int v = bytes[i] & 255;
+            chars[i * 2] = hex[v >>> 4];
+            chars[i * 2 + 1] = hex[v & 15];
+        }
+        return new String(chars);
     }
 
     private void countdown(int value) {

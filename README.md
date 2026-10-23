@@ -1,5 +1,7 @@
 # EstudioAudio
 
+> **Lab A/B relativo (draft sem promocao):** [Orquestrar sweep, gravar pelo microfone, comparar 16 janelas e exportar CFR/recibo](docs/atlas/ESTUDIOAUDIO_20261023_AB_LOOPBACK_INDUSTRIAL_GATE_V1.md). Reusa o pipeline Android/C; nao constitui validacao de SPL/FFT nem prova fisica ate a rodada de dispositivo.
+
 **EstudioAudio** é o nome canônico do projeto; **Rafaelia Audio Studio** é denominação histórica preservada para rastreabilidade. Pacote Android, JNI, ABI e arquivos mantêm os nomes técnicos atuais até prova de compatibilidade de uma eventual migração.
 
 > **Estado atual:** consultar [docs/START_HERE.md](docs/START_HERE.md) e [contrato compacto / reconciliação #64](docs/atlas/ESTUDIOAUDIO_20261023_COMPACT_BINARY_MERGE_RECONCILIATION_V1.md). Os SHAs e PASS abaixo são registros históricos datados, não validação do HEAD atual. APKs anteriores foram testados segundo relato do autor; não foi apresentado nesta alteração um recibo físico vinculado ao novo SHA.
