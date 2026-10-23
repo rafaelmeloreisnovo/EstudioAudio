@@ -181,21 +181,21 @@ architecture() {
   nm="$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-nm"
   flags='-std=c11 -O3 -ffreestanding -fno-builtin -nostdinc -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -fno-common -fno-optimize-sibling-calls -fvisibility=hidden -ffunction-sections -fdata-sections -Wall -Wextra -Werror -Iapp/src/main/cpp'
 
-  for src in rfa_zip32_core rfa_digest_core rfa_bit_stack_core dsp_core meter_core rfa_wave_core rfa_matrix_core rfa_block_core rfa_container_core rfa_fir_core rfa_time_core rfa_lms_core rfa_biquad_core rfa_voice_core rfa_tele_tts_core rfa_ptbr_core rfa_timbre_core rfa_measure_core rfa_rac1_core rfa_audio_format_core rfa_verbo_core; do
+  for src in rfa_zip32_core rfa_digest_core rfa_bit_stack_core dsp_core meter_core rfa_wave_core rfa_matrix_core rfa_block_core rfa_container_core rfa_fir_core rfa_time_core rfa_lms_core rfa_biquad_core rfa_voice_core rfa_playback_observer_core rfa_tele_tts_core rfa_ptbr_core rfa_timbre_core rfa_measure_core rfa_rac1_core rfa_audio_format_core rfa_verbo_core; do
     "$cc" --target=armv7a-linux-androideabi29 $flags -c "app/src/main/cpp/$src.c" -o "$src.armv7.o"
     "$nm" -u "$src.armv7.o" > "$src.armv7.undefined"
     test ! -s "$src.armv7.undefined" || { cat "$src.armv7.undefined"; fail "ARMV7_UNDEFINED=$src"; }
   done
 
   : > abi.actual
-  for src in rfa_zip32_core rfa_digest_core rfa_bit_stack_core dsp_core meter_core rfa_wave_core rfa_matrix_core rfa_block_core rfa_container_core rfa_fir_core rfa_time_core rfa_lms_core rfa_biquad_core rfa_voice_core rfa_tele_tts_core rfa_ptbr_core rfa_timbre_core rfa_measure_core rfa_rac1_core rfa_audio_format_core rfa_verbo_core; do
+  for src in rfa_zip32_core rfa_digest_core rfa_bit_stack_core dsp_core meter_core rfa_wave_core rfa_matrix_core rfa_block_core rfa_container_core rfa_fir_core rfa_time_core rfa_lms_core rfa_biquad_core rfa_voice_core rfa_playback_observer_core rfa_tele_tts_core rfa_ptbr_core rfa_timbre_core rfa_measure_core rfa_rac1_core rfa_audio_format_core rfa_verbo_core; do
     "$nm" --defined-only --extern-only "$src.armv7.o" | awk -v src="$src" '{print src ":" $NF}' >> abi.actual
   done
   sort -o abi.actual abi.actual
   grep -v '^[[:space:]]*#' native/abi/public_symbols_v1.txt | grep -v '^[[:space:]]*$' | sort > abi.expected
   diff -u abi.expected abi.actual
 
-  for src in rfa_zip32_core rfa_digest_core rfa_bit_stack_core dsp_core meter_core rfa_wave_core rfa_matrix_core rfa_block_core rfa_container_core rfa_fir_core rfa_time_core rfa_lms_core rfa_biquad_core rfa_voice_core rfa_tele_tts_core rfa_ptbr_core rfa_timbre_core rfa_measure_core rfa_rac1_core rfa_audio_format_core rfa_verbo_core; do
+  for src in rfa_zip32_core rfa_digest_core rfa_bit_stack_core dsp_core meter_core rfa_wave_core rfa_matrix_core rfa_block_core rfa_container_core rfa_fir_core rfa_time_core rfa_lms_core rfa_biquad_core rfa_voice_core rfa_playback_observer_core rfa_tele_tts_core rfa_ptbr_core rfa_timbre_core rfa_measure_core rfa_rac1_core rfa_audio_format_core rfa_verbo_core; do
     "$cc" --target=aarch64-linux-android29 $flags -c "app/src/main/cpp/$src.c" -o "$src.aarch64.o"
     "$nm" -u "$src.aarch64.o" > "$src.aarch64.undefined"
     test ! -s "$src.aarch64.undefined" || { cat "$src.aarch64.undefined"; fail "AARCH64_UNDEFINED=$src"; }

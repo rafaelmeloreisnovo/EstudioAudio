@@ -69,3 +69,10 @@ R3=<F_ok: reproducible source delta, native CI gates and size receipt route; F_g
 - Root cause: observer preset method was appended to the V2 narration file. This changed its source hash despite preserving existing text. Do not disable or repin the lock.
 - Minimal resolution: restore the exact original V2 file/blob `0f48f96e5d6512282fa859c122bbf96887aadb67`, inline the same observer-script constant in existing `MainActivity` click handler; no extra Java class, permission, runtime component or L0 C mutation.
 - Next CI exact-HEAD needed: verify lock and full build to APK, then read size/ABI/physical separation. Promotion remains blocked.
+
+## Successor — exact ABI object enumeration falsifier
+
+- Third CI: run `39900025271` passed topology, full `quality`, Java/NDK dual-ABI compilation, parser fuzz ASAN/UBSAN and freestanding runtime with zero undefined symbols. It stopped in step `50 · architecture / ABI`: manifest `rfa_playback_observer_core:rfa_playback_observe_mono` was present but object generation/enumeration in `architecture()` still omitted `rfa_playback_observer_core`.
+- Cause: three hardcoded source enumerations under `ci/rafaelia-pipeline.sh architecture()` had not received the additive observer module. The symbol is not absent from source and must NOT be deleted from the ABI manifest.
+- Minimal fix: insert `rfa_playback_observer_core` in all three arrays (ARMv7 objects, exported-symbol collection, AArch64 objects). Preserve zero-undefined tests and exact ABI comparison without widening allowances.
+- Proof still required: new exact SHA CI terminal result and generated APK byte receipt; prior run's C/Java compile PASS is scoped, not full APK proof.
