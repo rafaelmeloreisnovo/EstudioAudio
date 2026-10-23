@@ -19,6 +19,7 @@ add_library(rfa_manifold_core STATIC
     rfa_playback_observer_core.c
     rfa_tele_tts_core.c
     rfa_ptbr_core.c
+    rfa_timbre_core.c
     rfa_measure_core.c
     rfa_rac1_core.c
     rfa_audio_format_core.c

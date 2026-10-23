@@ -27,6 +27,20 @@ int rfa_ptbr_validate(const rfa_u8 *utf8, rfa_u32 bytes);
 void rfa_ptbr_reset(rfa_ptbr_state *state);
 rfa_u32 rfa_ptbr_render(rfa_ptbr_state *state, const rfa_u8 *utf8,
                         rfa_u32 bytes, rfa_i16 *pcm, rfa_u32 capacity);
+/* V2 robotic cadence: caller-owned state, 16-kHz mono, integer-only.
+ * The existing rfa_ptbr_render() remains unchanged for A/B comparison.
+ * Distinct punctuation silence + mild deterministic smoothing are NOT proof
+ * of intelligible, accessible, natural, or speaker-specific TTS. */
+typedef struct {
+ rfa_ptbr_state voice;
+ rfa_u32 silence;
+ rfa_u32 pending;
+ rfa_i32 smooth;
+} rfa_ptbr_robot_state;
+void rfa_ptbr_robot_reset(rfa_ptbr_robot_state *state);
+rfa_u32 rfa_ptbr_robot_render(rfa_ptbr_robot_state *state,
+                            const rfa_u8 *utf8, rfa_u32 bytes,
+                            rfa_i16 *pcm, rfa_u32 capacity);
 #ifdef __cplusplus
 }
 #endif

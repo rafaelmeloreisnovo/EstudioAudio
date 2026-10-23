@@ -12,6 +12,9 @@
 #include "rfa_measure_core.h"
 #include "rfa_tele_tts_core.h"
 #include "rfa_ptbr_core.h"
+#include "rfa_timbre_core.h"
+#include "rfa_digest_core.h"
+#include "rfa_zip32_core.h"
 
 /*
  * Platform-owned instances.
@@ -20,6 +23,161 @@
 static dsp_state g_dsp_state;
 static meter_state g_meter_state;
 static rfa_exp_sweep_q31 g_sweep_state;
+
+/* Byte-core JNI edge only. The digest/CRC implementation remains in the
+ * freestanding core; Java owns all input/output arrays and fallback policy. */
+JNIEXPORT jint JNICALL
+Java_io_rafaelia_audiostudio_NativeDsp_nativeSha256(
+        JNIEnv *env, jclass clazz, jbyteArray input, jint offset,
+        jint count, jbyteArray output) {
+    rfa_sha256 state;
+    jbyte *bytes;
+    rfa_u8 digest[32];
+    jsize length;
+    (void)clazz;
+    if (!input || !output) return 0;
+    length = (*env)->GetArrayLength(env, input);
+    if (offset < 0 || count < 0 || offset > length || count > length - offset) return 0;
+    if ((*env)->GetArrayLength(env, output) != 32) return 0;
+    bytes = (*env)->GetByteArrayElements(env, input, (jboolean *)0);
+    if (!bytes) return 0;
+    rfa_sha256_reset(&state);
+    if (!rfa_sha256_update(&state, (const rfa_u8 *)bytes + offset, (rfa_u32)count) ||
+        !rfa_sha256_finish(&state, digest)) {
+        (*env)->ReleaseByteArrayElements(env, input, bytes, JNI_ABORT);
+        return 0;
+    }
+    (*env)->ReleaseByteArrayElements(env, input, bytes, JNI_ABORT);
+    (*env)->SetByteArrayRegion(env, output, 0, 32, (const jbyte *)digest);
+    return (*env)->ExceptionCheck(env) ? 0 : 1;
+}
+
+JNIEXPORT jint JNICALL
+Java_io_rafaelia_audiostudio_NativeDsp_nativeCrc32(
+        JNIEnv *env, jclass clazz, jbyteArray input, jint offset, jint count,
+        jintArray output) {
+    rfa_u32 accumulator = 0xffffffffU;
+    jint value;
+    jbyte *bytes;
+    jsize length;
+    (void)clazz;
+    if (!input || !output) return 0;
+    length = (*env)->GetArrayLength(env, input);
+    if (offset < 0 || count < 0 || offset > length || count > length - offset) return 0;
+    if ((*env)->GetArrayLength(env, output) != 1) return 0;
+    bytes = (*env)->GetByteArrayElements(env, input, (jboolean *)0);
+    if (!bytes) return 0;
+    if (!rfa_crc32_update(&accumulator, (const rfa_u8 *)bytes + offset, (rfa_u32)count)) {
+        (*env)->ReleaseByteArrayElements(env, input, bytes, JNI_ABORT);
+        return 0;
+    }
+    (*env)->ReleaseByteArrayElements(env, input, bytes, JNI_ABORT);
+    value = (jint)(~accumulator);
+    (*env)->SetIntArrayRegion(env, output, 0, 1, &value);
+    return (*env)->ExceptionCheck(env) ? 0 : 1;
+}
+
+JNIEXPORT jint JNICALL
+Java_io_rafaelia_audiostudio_NativeDsp_nativeZip32Store(
+        JNIEnv *env, jclass clazz,
+        jbyteArray namesBlob, jintArray nameOffsets, jintArray nameSizes,
+        jbyteArray dataBlob, jintArray dataOffsets, jintArray dataSizes,
+        jint entryCount, jbyteArray output, jintArray written) {
+    rfa_zip32_entry entries[32];
+    jint name_offset[32];
+    jint name_size[32];
+    jint data_offset[32];
+    jint data_size[32];
+    jbyte *names = (jbyte *)0;
+    jbyte *payloads = (jbyte *)0;
+    jbyte *archive = (jbyte *)0;
+    jsize names_length;
+    jsize payloads_length;
+    jsize output_length;
+    rfa_u32 produced = 0U;
+    jint produced_word;
+    int i;
+    int ok;
+    (void)clazz;
+
+    if (!namesBlob || !nameOffsets || !nameSizes || !dataBlob ||
+        !dataOffsets || !dataSizes || !output || !written) return 0;
+    if (entryCount < 0 || entryCount > 32) return 0;
+    if ((*env)->GetArrayLength(env, nameOffsets) < entryCount ||
+        (*env)->GetArrayLength(env, nameSizes) < entryCount ||
+        (*env)->GetArrayLength(env, dataOffsets) < entryCount ||
+        (*env)->GetArrayLength(env, dataSizes) < entryCount ||
+        (*env)->GetArrayLength(env, written) != 1) return 0;
+
+    names_length = (*env)->GetArrayLength(env, namesBlob);
+    payloads_length = (*env)->GetArrayLength(env, dataBlob);
+    output_length = (*env)->GetArrayLength(env, output);
+    if (output_length < 0) return 0;
+
+    if (entryCount > 0) {
+        (*env)->GetIntArrayRegion(env, nameOffsets, 0, entryCount, name_offset);
+        if ((*env)->ExceptionCheck(env)) return 0;
+        (*env)->GetIntArrayRegion(env, nameSizes, 0, entryCount, name_size);
+        if ((*env)->ExceptionCheck(env)) return 0;
+        (*env)->GetIntArrayRegion(env, dataOffsets, 0, entryCount, data_offset);
+        if ((*env)->ExceptionCheck(env)) return 0;
+        (*env)->GetIntArrayRegion(env, dataSizes, 0, entryCount, data_size);
+        if ((*env)->ExceptionCheck(env)) return 0;
+
+        for (i = 0; i < entryCount; ++i) {
+            if (name_offset[i] < 0 || name_size[i] <= 0 ||
+                data_offset[i] < 0 || data_size[i] < 0 ||
+                name_offset[i] > names_length ||
+                name_size[i] > names_length - name_offset[i] ||
+                data_offset[i] > payloads_length ||
+                data_size[i] > payloads_length - data_offset[i]) {
+                return 0;
+            }
+        }
+    }
+
+    archive = (*env)->GetByteArrayElements(env, output, (jboolean *)0);
+    if (!archive) return 0;
+    if (entryCount > 0) {
+        names = (*env)->GetByteArrayElements(env, namesBlob, (jboolean *)0);
+        if (!names) {
+            (*env)->ReleaseByteArrayElements(env, output, archive, JNI_ABORT);
+            return 0;
+        }
+        if (payloads_length > 0) {
+            payloads = (*env)->GetByteArrayElements(env, dataBlob, (jboolean *)0);
+            if (!payloads) {
+                (*env)->ReleaseByteArrayElements(env, namesBlob, names, JNI_ABORT);
+                (*env)->ReleaseByteArrayElements(env, output, archive, JNI_ABORT);
+                return 0;
+            }
+        }
+
+        for (i = 0; i < entryCount; ++i) {
+            entries[i].name = (const rfa_u8 *)names + name_offset[i];
+            entries[i].name_size = (rfa_u32)name_size[i];
+            entries[i].data = data_size[i] == 0 ? (const rfa_u8 *)0 :
+                    (const rfa_u8 *)payloads + data_offset[i];
+            entries[i].data_size = (rfa_u32)data_size[i];
+        }
+    }
+
+    ok = rfa_zip32_store(entryCount == 0 ? (const rfa_zip32_entry *)0 : entries,
+                         (rfa_u32)entryCount,
+                         (rfa_u8 *)archive, (rfa_u32)output_length, &produced);
+
+    if (payloads) (*env)->ReleaseByteArrayElements(env, dataBlob, payloads, JNI_ABORT);
+    if (names) (*env)->ReleaseByteArrayElements(env, namesBlob, names, JNI_ABORT);
+    if (!ok) {
+        (*env)->ReleaseByteArrayElements(env, output, archive, JNI_ABORT);
+        return 0;
+    }
+    (*env)->ReleaseByteArrayElements(env, output, archive, 0);
+    if ((*env)->ExceptionCheck(env)) return 0;
+    produced_word = (jint)produced;
+    (*env)->SetIntArrayRegion(env, written, 0, 1, &produced_word);
+    return (*env)->ExceptionCheck(env) ? 0 : 1;
+}
 
 JNIEXPORT void JNICALL
 Java_io_rafaelia_audiostudio_NativeDsp_nativeReset(
@@ -534,4 +692,161 @@ Java_io_rafaelia_audiostudio_NativeDsp_nativePtbrRender(
     raw[5]=(jint)state.step;
     (*env)->SetIntArrayRegion(env,serialized,0,6,raw);
     return (jint)frames;
+}
+
+/* Timbre lab: host bridges bounded caller-owned stats and PCM; no stored
+ * voice, no state globals, and no Android/device calls in freestanding C. */
+JNIEXPORT jint JNICALL
+Java_io_rafaelia_audiostudio_NativeDsp_nativeTimbreAccumulate(
+        JNIEnv *env, jclass clazz, jshortArray samples,
+        jint count, jlongArray metrics) {
+    jlong raw[6];
+    jshort *pcm;
+    rfa_timbre_stats s;
+    int ok;
+    (void)clazz;
+    if (!samples || !metrics || count<=0 || count>4096 ||
+        (*env)->GetArrayLength(env,samples)<count ||
+        (*env)->GetArrayLength(env,metrics)!=6) return 0;
+    (*env)->GetLongArrayRegion(env,metrics,0,6,raw);
+    if ((*env)->ExceptionCheck(env)) return 0;
+    if (raw[0]<0 || raw[0]>1000000 || raw[1]<0 ||
+        raw[2]<0 || raw[3]<0 || raw[4]<-32768 || raw[4]>32767 ||
+        raw[5]<0 || raw[5]>1) return 0;
+    s.samples=(rfa_u64)raw[0];
+    s.abs_sum=(rfa_u64)raw[1];
+    s.diff_sum=(rfa_u64)raw[2];
+    s.zero_crossings=(rfa_u64)raw[3];
+    s.last=(rfa_i32)raw[4];
+    s.seen=(rfa_u32)raw[5];
+    if (s.abs_sum>s.samples*32768U ||
+        s.diff_sum>s.samples*65535U || s.zero_crossings>s.samples ||
+        (s.samples>0U && !s.seen)) return 0;
+    pcm=(*env)->GetShortArrayElements(env,samples,(jboolean *)0);
+    if (!pcm) return 0;
+    ok=rfa_timbre_accumulate(&s,(const rfa_i16 *)pcm,(rfa_u32)count);
+    (*env)->ReleaseShortArrayElements(env,samples,pcm,JNI_ABORT);
+    if (!ok) return 0;
+    raw[0]=(jlong)s.samples; raw[1]=(jlong)s.abs_sum;
+    raw[2]=(jlong)s.diff_sum; raw[3]=(jlong)s.zero_crossings;
+    raw[4]=(jlong)s.last; raw[5]=(jlong)s.seen;
+    (*env)->SetLongArrayRegion(env,metrics,0,6,raw);
+    return (*env)->ExceptionCheck(env)?0:1;
+}
+
+JNIEXPORT jint JNICALL
+Java_io_rafaelia_audiostudio_NativeDsp_nativeTimbreFinalize(
+        JNIEnv *env, jclass clazz, jlongArray metrics,
+        jintArray output) {
+    jlong raw[6];
+    jint profile[3];
+    rfa_timbre_stats s;
+    rfa_timbre_profile p;
+    (void)clazz;
+    if (!metrics || !output ||
+        (*env)->GetArrayLength(env,metrics)!=6 ||
+        (*env)->GetArrayLength(env,output)<3) return 0;
+    (*env)->GetLongArrayRegion(env,metrics,0,6,raw);
+    if ((*env)->ExceptionCheck(env)) return 0;
+    if (raw[0]<0 || raw[0]>1000000 || raw[1]<0 ||
+        raw[2]<0 || raw[3]<0 || raw[4]<-32768 || raw[4]>32767 ||
+        raw[5]!=1) return 0;
+    s.samples=(rfa_u64)raw[0];s.abs_sum=(rfa_u64)raw[1];
+    s.diff_sum=(rfa_u64)raw[2];s.zero_crossings=(rfa_u64)raw[3];
+    s.last=(rfa_i32)raw[4];s.seen=(rfa_u32)raw[5];
+    if(s.abs_sum>s.samples*32768U || s.diff_sum>s.samples*65535U) return 0;
+    if (!rfa_timbre_finalize(&s,&p)) return 0;
+    profile[0]=(jint)p.mix_q8;profile[1]=(jint)p.mean_abs;
+    profile[2]=(jint)p.zero_cross_k;
+    (*env)->SetIntArrayRegion(env,output,0,3,profile);
+    return (*env)->ExceptionCheck(env)?0:1;
+}
+
+JNIEXPORT jint JNICALL
+Java_io_rafaelia_audiostudio_NativeDsp_nativeTimbreApply(
+        JNIEnv *env, jclass clazz, jshortArray samples,
+        jint count, jint mixQ8, jintArray filterState) {
+    jint previous;
+    jshort *pcm;
+    rfa_timbre_profile p;
+    rfa_timbre_filter state;
+    int ok;
+    (void)clazz;
+    if(!samples || !filterState || count<=0 || count>4096 ||
+       mixQ8<64 || mixQ8>240 ||
+       (*env)->GetArrayLength(env,samples)<count ||
+       (*env)->GetArrayLength(env,filterState)!=1) return 0;
+    (*env)->GetIntArrayRegion(env,filterState,0,1,&previous);
+    if ((*env)->ExceptionCheck(env) || previous<-32768 ||
+        previous>32767) return 0;
+    p.mix_q8=(rfa_u32)mixQ8;p.mean_abs=0U;p.zero_cross_k=0U;
+    state.lowpass=(rfa_i32)previous;
+    pcm=(*env)->GetShortArrayElements(env,samples,(jboolean *)0);
+    if (!pcm) return 0;
+    ok=rfa_timbre_apply(&state,&p,(rfa_i16 *)pcm,(rfa_u32)count);
+    (*env)->ReleaseShortArrayElements(env,samples,pcm,ok?0:JNI_ABORT);
+    if (!ok) return 0;
+    previous=(jint)state.lowpass;
+    (*env)->SetIntArrayRegion(env,filterState,0,1,&previous);
+    return (*env)->ExceptionCheck(env)?0:1;
+}
+
+/* Opt-in robotic cadence uses a fresh nine-word caller-owned state.
+ * Unchanged six-word PTBR ABI remains available as A/B baseline. */
+JNIEXPORT jint JNICALL
+Java_io_rafaelia_audiostudio_NativeDsp_nativeRobotPtbrRender(
+        JNIEnv *env, jclass clazz, jbyteArray script,
+        jintArray serialized, jshortArray pcm) {
+    jint raw[9];
+    jbyte *source;
+    jshort *output;
+    jsize bytes,space;
+    rfa_ptbr_robot_state state;
+    rfa_u32 frames;
+    (void)clazz;
+    if (!script || !serialized || !pcm ||
+        (*env)->GetArrayLength(env,serialized)!=9) return 0;
+    bytes=(*env)->GetArrayLength(env,script);
+    space=(*env)->GetArrayLength(env,pcm);
+    if (bytes<1 || bytes>2048 || space<1 || space>4096) return 0;
+    (*env)->GetIntArrayRegion(env,serialized,0,9,raw);
+    if ((*env)->ExceptionCheck(env)) return 0;
+    if (raw[0]<0 || raw[1]<0 || raw[1]>1200 ||
+        raw[4]<0 || raw[4]>RFA_PT_N ||
+        raw[6]<0 || raw[6]>2400 ||
+        raw[7]<0 || raw[7]>2400 ||
+        raw[8]<-32768 || raw[8]>32767) return 0;
+    state.voice.index=(rfa_u32)raw[0];
+    state.voice.remaining=(rfa_u32)raw[1];
+    state.voice.phase=(rfa_u32)raw[2];
+    state.voice.noise=(rfa_u32)raw[3];
+    state.voice.phone=(rfa_u32)raw[4];
+    state.voice.step=(rfa_u32)raw[5];
+    state.silence=(rfa_u32)raw[6];
+    state.pending=(rfa_u32)raw[7];
+    state.smooth=(rfa_i32)raw[8];
+    source=(*env)->GetByteArrayElements(env,script,(jboolean *)0);
+    if (!source) return 0;
+    output=(*env)->GetShortArrayElements(env,pcm,(jboolean *)0);
+    if (!output) {
+        (*env)->ReleaseByteArrayElements(env,script,source,JNI_ABORT);
+        return 0;
+    }
+    frames=rfa_ptbr_robot_render(&state,(const rfa_u8 *)source,
+                                  (rfa_u32)bytes,(rfa_i16 *)output,
+                                  (rfa_u32)space);
+    (*env)->ReleaseByteArrayElements(env,script,source,JNI_ABORT);
+    (*env)->ReleaseShortArrayElements(env,pcm,output,frames?0:JNI_ABORT);
+    if (!frames) return 0;
+    raw[0]=(jint)state.voice.index;
+    raw[1]=(jint)state.voice.remaining;
+    raw[2]=(jint)state.voice.phase;
+    raw[3]=(jint)state.voice.noise;
+    raw[4]=(jint)state.voice.phone;
+    raw[5]=(jint)state.voice.step;
+    raw[6]=(jint)state.silence;
+    raw[7]=(jint)state.pending;
+    raw[8]=(jint)state.smooth;
+    (*env)->SetIntArrayRegion(env,serialized,0,9,raw);
+    return (*env)->ExceptionCheck(env)?0:(jint)frames;
 }

@@ -80,3 +80,13 @@ For every material dependency delta record:
 `boundary -> previous dependency -> replacement/retention reason -> execution -> evidence -> rollback -> remaining TOKEN_VAZIO`.
 
 <!-- /RAFAELIA_FREESTANDING_POLICY_V1 -->
+
+## EstudioAudio compact-binary and evidence contract — successor 2026-10-23
+
+- Canonical project display name: **EstudioAudio**. Historical names and existing Android package names, file paths, JNI/public ABI symbols must not be mass-renamed without compatibility evidence. A technical field term such as DSP is not, by its presence alone, a proven third-party copyright infringement; record any specific trademark/license concern with identified right, jurisdiction, source, and review.
+- Compile and package APKs using the existing GitHub Actions Gradle/NDK chain. Host C smoke executables in that same CI are scoped engineering tests, not APK/device runs. Do not use Python to compile or package Android artifacts.
+- Freestanding applies to the pure C core, **not** Android/JNI/Gradle/AudioTrack packaging. Retain the current linker/compiler section flags and compare exact artifacts before optimizing symbols, source order or layout. Treat names, comments, layout and flags as separate measured variables; do not assume a byte reduction.
+- In a full APK CI build, record exact APK byte count + SHA256 + source SHA/run and the 1 MiB reference band. Above the reference is a reviewed deviation, not an automatically fabricated PASS or an untested release claim. The 1 MiB reference is provisional until an exact baseline is observed.
+- Previous APK installation/playback described by the author is USER_REPORTED_HISTORICAL_EXECUTION unless an exact matching APK hash, device and receipt are present. It is not ZERO or NOT_RUN historically; it does not validate a new commit.
+- Typed absence: UNKNOWN_SOURCE, NOT_OBSERVED, NOT_RUN, NOT_IMPLEMENTED, EVIDENCE_MISSING, AUTHORITY_UNRESOLVED, CONFLICT_UNRESOLVED, NOT_APPLICABLE_WITH_REASON. Every material token must carry gate/next/evidence pointer. UNKNOWN is not zero.
+- No automatic main merge, release, license reinterpretation or PHYSICAL_PASS from source-only tests. Existing issue #66 requires native provider enforcement proof. Human/integration review remains separate from CI.

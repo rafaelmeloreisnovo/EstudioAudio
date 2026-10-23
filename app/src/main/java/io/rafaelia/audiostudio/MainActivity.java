@@ -254,6 +254,21 @@ public final class MainActivity extends Activity {
         controls.addView(stopText, weight());
         panel.addView(controls);
         panel.addView(voiceGuide);
+        // Separate A/B option; does not request microphone/storage or auto-play.
+        Button robotGuide = button("Voz robótica · cadência experimental");
+        robotGuide.setOnClickListener(v -> {
+            if (guide.isPlaying()) {
+                guide.stop();
+                status.setText("Voz robótica interrompida.");
+            } else if (recorder != null || processingGate.busy() || calibrationRunning) {
+                status.setText("ROBOT_GUIDE_BLOCKED · microphone/DSP session active");
+            } else if (guide.playRobotic(scriptEdit.getText().toString())) {
+                status.setText("Voz robótica experimental · pausas ampliadas; inteligibilidade NÃO VALIDADA");
+            } else {
+                status.setText("ROBOT_GUIDE_BLOCKED · texto inválido ou sessão ocupada");
+            }
+        });
+        panel.addView(robotGuide);
         // Explicit educational preset only; never starts AudioTrack or records.
         Button networkNarration = button("Rede complexa · roteiro");
         networkNarration.setOnClickListener(v -> {
@@ -270,7 +285,6 @@ public final class MainActivity extends Activity {
             status.setText("Observador físico: cole texto, toque TTS externo, grave pelo app. Voz/pessoa/sexo NÃO CLAIMED.");
         });
         panel.addView(physicalObserver);
-
         speedLabel = new TextView(this);
         speedLabel.setTextColor(Color.rgb(164, 180, 191));
         speedLabel.setTextSize(10f);

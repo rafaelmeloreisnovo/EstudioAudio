@@ -92,6 +92,11 @@ public final class WavePhysicsLabActivity extends Activity implements SensorEven
         Button mic = button("Amostrar espectro local (microfone, 4096 amostras)");
         mic.setOnClickListener(v -> sampleMic());
         root.addView(mic);
+        Button timbre = button("LAB TTS · timbre por Compartilhar WAV");
+        timbre.setOnClickListener(v ->
+                startActivity(new android.content.Intent(
+                        this, TimbreLearningLabActivity.class)));
+        root.addView(timbre);
         Button simulateD = button("Experimento D · simular (sem sensores / radio)");
         simulateD.setOnClickListener(v -> {
             dSimulation = WaveLabDSimulator.compareForReceipt();

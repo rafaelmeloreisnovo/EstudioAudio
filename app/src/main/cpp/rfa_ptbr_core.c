@@ -148,3 +148,66 @@ rfa_u32 rfa_ptbr_render(rfa_ptbr_state *state, const rfa_u8 *utf8,
  }
  return used;
 }
+
+/* Robotic style V2 is a separate, optional renderer:
+ * - deterministic phrase punctuation pauses, at 16 kHz
+ * - a gentle four-tap-style one-pole low pass, with explicit caller state
+ * - no model, dictionary, libc, heap, syscalls, mutable globals or FP
+ * Original PT-BR render remains bit-exact for A/B comparison. */
+void rfa_ptbr_robot_reset(rfa_ptbr_robot_state *state) {
+ if (!state) return;
+ rfa_ptbr_reset(&state->voice);
+ state->silence=0U;state->pending=0U;state->smooth=0;
+}
+rfa_u32 rfa_ptbr_robot_render(rfa_ptbr_robot_state *state,
+                             const rfa_u8 *utf8, rfa_u32 bytes,
+                             rfa_i16 *pcm, rfa_u32 capacity) {
+ rfa_u32 used=0U;
+ if (!state || !utf8 || !pcm || !capacity || capacity>4096U ||
+     !bytes || bytes>2048U || state->voice.index>bytes ||
+     state->voice.remaining>1200U || state->voice.phone>RFA_PT_N ||
+     state->silence>2400U || state->pending>2400U ||
+     state->smooth < -32768 || state->smooth > 32767 ||
+     !rfa_ptbr_validate(utf8,bytes)) return 0U;
+ while (used<capacity) {
+  rfa_u32 n,i,span;
+  if (state->silence) {
+   n=capacity-used;
+   if (n>state->silence) n=state->silence;
+   for (i=0U;i<n;++i) pcm[used+i]=0;
+   state->silence-=n;
+   used+=n;
+   state->smooth=0;
+   continue;
+  }
+  if (!state->voice.remaining) {
+   rfa_ptbr_event e;
+   rfa_u32 at=state->voice.index,chr;
+   if (at==bytes) break;
+   if (rfa_ptbr_next(utf8,bytes,&at,&e)!=1) return used;
+   chr=(rfa_u32)utf8[state->voice.index];
+   state->pending=0U;
+   if (chr=='.'||chr=='?'||chr=='!') state->pending=2400U;
+   else if (chr==';'||chr==':') state->pending=1600U;
+   else if (chr==',') state->pending=960U;
+   span=e.frames;
+  } else {
+   span=state->voice.remaining;
+  }
+  n=capacity-used;
+  if (n>span) n=span;
+  if (rfa_ptbr_render(&state->voice,utf8,bytes,pcm+used,n)!=n)
+   return used;
+  for (i=0U;i<n;++i) {
+   rfa_i32 x=(rfa_i32)pcm[used+i];
+   state->smooth=(state->smooth*3+x)/4;
+   pcm[used+i]=(rfa_i16)state->smooth;
+  }
+  used+=n;
+  if (!state->voice.remaining && state->pending) {
+   state->silence=state->pending;
+   state->pending=0U;
+  }
+ }
+ return used;
+}
