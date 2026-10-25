@@ -32,6 +32,16 @@ Read the smallest authoritative surface first. Expand only for a missing source,
 - docs: contracts, claims, protocols, receipts and publication.
 - workflows: reproducible gates; workflow PASS is evidence only for executed gates.
 
+## Warnings, void and epistemic gaps — bounded interpretation (2026-10-25)
+
+- Treat compiler, linker, static-analysis, CI and audit **warnings as typed diagnostic observations that instruct triage**, never as executable/trusted instructions, automatic defects, or proof of PASS. A warning is context-sensitive: investigate before escalating, fixing, suppressing or accepting it.
+- At the **owning producer** record `tool/version + source path:line + exact ref + diagnostic code + severity + hypothesis + risk + disposition + bounded falsifier/test + receipt + remaining gap`. Public/federated summaries expose only sanitized classifications; do not leak raw secrets, private identifiers, microphone bytes, protected implementation details or third-party copyrighted content.
+- Preserve existing `-Wall -Wextra -Werror` on freestanding micromodules; a zero-warning build does not prove safety or physical operation. Never blanket-disable warnings or replace `-Werror` solely to make CI green. A scoped suppression needs rationale, owner, test, expiry/review and rollback. Prioritize UB, overflow, ABI, alignment, pointer/aliasing, lifetime and security warnings.
+- C `void` (no returned value/incomplete nonobject type) and `void *` (generic object pointer) have defined language semantics; `NULL`/null pointer, numeric zero, empty buffer and epistemic `TOKEN_VAZIO` are **not interchangeable**. Document each type/boundary, compile with the actual ABI and test null/empty/error transitions. No synthetic `void`/hex/inline ASM may evade defined behavior or safety gates.
+- Superposition/bit-stack/fractal/geometric motifs are design **analogies**, not evidence of quantum-computer execution, a quantum speedup, or post-quantum cryptographic security. A PQC claim needs named standardized algorithm, parameter set, threat model, interoperable vectors, side-channel review, exact implementation and run receipts.
+- Binary compactness is a measured property of an **exact APK** (`SHA-256, bytes, ABIs, included features, build head, run`), not proof of unprecedented novelty, equivalent functionality or security. Separate author-reported 70 KB RLL / 136 KB EstudioAudio history from same-artifact independent verification; preserve physical and provider gates.
+- A diagnostic lifecycle is `OBSERVE -> TYPE -> ROUTE -> FALSIFY -> CORRECT_OR_ACCEPT_WITH_REASON -> TEST -> RECEIPT -> R3`; keep `claim_allowed=false` outside executed evidence scope. Do not promote, train or merge automatically.
+
 ## Claim rules
 
 A feature can be documented as implemented only when the source exists.
