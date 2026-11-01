@@ -23,6 +23,7 @@ sources=(
   rfa_container_core rfa_fir_core rfa_time_core rfa_lms_core
   rfa_biquad_core rfa_voice_core rfa_playback_observer_core rfa_tele_tts_core rfa_ptbr_core rfa_timbre_core rfa_measure_core rfa_rac1_core
   rfa_audio_format_core rfa_verbo_core
+  rfa_sensor_delta_core rfa_tts_pcm_guard_core rfa_dual_watchdog_core
 )
 
 rm -rf .runtime-gate

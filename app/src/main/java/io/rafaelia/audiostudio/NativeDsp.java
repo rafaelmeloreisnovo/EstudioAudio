@@ -51,6 +51,14 @@ final class NativeDsp {
             int entryCount, byte[] output, int[] written);
 
     static native int nativeGuideRender(byte[] utf8, int[] state, short[] pcm);
+    // Optional low-level specialists, not enabled in default physical I/O path.
+    // Sensors arrive through Android's SensorManager; all states caller-owned.
+    static native int nativeSensorDeltaQ15(short[] before, short[] after, int[] result);
+    static native int nativeGuardPcmQ15(short[] pcm, int count, int gainQ15, int alive);
+    static native int nativeWatchdogFlags(
+            long[] timestampsAndPresence, long monotonicNowMs,
+            int maxAgeAudioMs, int maxAgeSensorMs, int requireSensor);
+
     static native int nativePtbrValidate(byte[] utf8);
     static native int nativePtbrRender(byte[] utf8, int[] state, short[] pcm);
     // Separate authorial robotic cadence (nine caller-owned words); legacy remains.

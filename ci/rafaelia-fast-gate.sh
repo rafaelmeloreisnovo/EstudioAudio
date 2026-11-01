@@ -33,6 +33,7 @@ bash ci/audio-session-gate.sh
 bash ci/zipraf-lowlevel-gate.sh
 bash ci/wave-lab-gate.sh
 bash ci/tele-tts-core-gate.sh
+bash ci/sensor-tts-specialists-gate.sh
 bash ci/playback-observer-core-gate.sh
 bash ci/playback-loopback-contract-gate.sh
 bash ci/ptbr-core-gate.sh
