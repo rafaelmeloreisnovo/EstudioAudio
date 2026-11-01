@@ -11,6 +11,9 @@
 #include "rfa_container_core.h"
 #include "rfa_measure_core.h"
 #include "rfa_tele_tts_core.h"
+#include "rfa_sensor_delta_core.h"
+#include "rfa_tts_pcm_guard_core.h"
+#include "rfa_dual_watchdog_core.h"
 #include "rfa_ptbr_core.h"
 #include "rfa_timbre_core.h"
 #include "rfa_digest_core.h"
@@ -891,4 +894,76 @@ Java_io_rafaelia_audiostudio_NativeDsp_nativeRobotPtbrRender(
     raw[8]=(jint)state.smooth;
     (*env)->SetIntArrayRegion(env,serialized,0,9,raw);
     return (*env)->ExceptionCheck(env)?0:(jint)frames;
+}
+
+
+/*
+ * Optional Android boundary for specialist S01/T01/W01.
+ * Not called by the default audio or sensor path until device A/B acceptance.
+ * No native object ownership, no global session and no direct sensor register IO.
+ */
+JNIEXPORT jint JNICALL
+Java_io_rafaelia_audiostudio_NativeDsp_nativeSensorDeltaQ15(
+        JNIEnv *env, jclass clazz, jshortArray before, jshortArray after,
+        jintArray output) {
+    jshort a[3], b[3];
+    rfa_u32 value;
+    jint out;
+    (void)clazz;
+    if (!before || !after || !output ||
+        (*env)->GetArrayLength(env,before)!=3 ||
+        (*env)->GetArrayLength(env,after)!=3 ||
+        (*env)->GetArrayLength(env,output)!=1) return 0;
+    (*env)->GetShortArrayRegion(env,before,0,3,a);
+    if ((*env)->ExceptionCheck(env)) return 0;
+    (*env)->GetShortArrayRegion(env,after,0,3,b);
+    if ((*env)->ExceptionCheck(env)) return 0;
+    if (!rfa_sensor_delta3_energy((const rfa_i16 *)a,
+                                  (const rfa_i16 *)b,&value)) return 0;
+    out=(jint)value;
+    (*env)->SetIntArrayRegion(env,output,0,1,&out);
+    return (*env)->ExceptionCheck(env)?0:1;
+}
+
+JNIEXPORT jint JNICALL
+Java_io_rafaelia_audiostudio_NativeDsp_nativeGuardPcmQ15(
+        JNIEnv *env, jclass clazz, jshortArray samples, jint count,
+        jint gainQ15, jint alive) {
+    jshort *pcm;
+    int ok;
+    (void)clazz;
+    if (!samples || count<0 || count>4096 ||
+        gainQ15<0 || gainQ15>32767 || alive<0 || alive>1 ||
+        (*env)->GetArrayLength(env,samples)<count) return 0;
+    pcm=(*env)->GetShortArrayElements(env,samples,(jboolean *)0);
+    if (!pcm) return 0;
+    ok=rfa_tts_pcm_guard_q15((rfa_i16 *)pcm,(rfa_u32)count,
+                             (rfa_u32)gainQ15,(rfa_u32)alive);
+    (*env)->ReleaseShortArrayElements(env,samples,pcm,ok?0:JNI_ABORT);
+    return ok;
+}
+
+/* Pass caller-monotonic timestamps [audio,sensor,seen_audio,seen_sensor].
+ * No system clock or sensor is read in native code. */
+JNIEXPORT jint JNICALL
+Java_io_rafaelia_audiostudio_NativeDsp_nativeWatchdogFlags(
+        JNIEnv *env, jclass clazz, jlongArray rawState,
+        jlong nowMs, jint audioTtlMs, jint sensorTtlMs, jint requireSensor) {
+    jlong values[4];
+    rfa_dual_watchdog state;
+    (void)clazz;
+    if (!rawState || (*env)->GetArrayLength(env,rawState)!=4 ||
+        nowMs<0 || audioTtlMs<=0 || sensorTtlMs<=0 ||
+        requireSensor<0 || requireSensor>1) return 0;
+    (*env)->GetLongArrayRegion(env,rawState,0,4,values);
+    if ((*env)->ExceptionCheck(env) || values[0]<0 || values[1]<0 ||
+        (values[2]!=0 && values[2]!=1) ||
+        (values[3]!=0 && values[3]!=1)) return 0;
+    state.audio_ms=(rfa_u64)values[0];
+    state.sensor_ms=(rfa_u64)values[1];
+    state.audio_seen=(rfa_u32)values[2];
+    state.sensor_seen=(rfa_u32)values[3];
+    return (jint)rfa_dual_watchdog_check(
+        &state,(rfa_u64)nowMs,(rfa_u32)audioTtlMs,
+        (rfa_u32)sensorTtlMs,(rfa_u32)requireSensor);
 }
