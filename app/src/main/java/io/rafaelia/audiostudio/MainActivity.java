@@ -65,6 +65,12 @@ public final class MainActivity extends Activity {
     private TextView comparisonMetricsBox;
     private SpectrumView comparisonReferenceView;
     private SpectrumView comparisonResponseView;
+    // Experimental opt-in overlay; original recorder and mastering stay unchanged.
+    private VoiceBodyFieldView voiceBodyField;
+    private VoiceBodyMotionProbe voiceBodyProbe;
+    private Button voiceBodyToggle;
+    private boolean voiceBodyActive;
+    private final long[] voiceBodySpectrum = new long[16];
     private final short[] liveWave = new short[512];
 
     private AudioRecorderEngine recorder;
@@ -114,6 +120,17 @@ public final class MainActivity extends Activity {
                 studioWorkspaceView.setCaptureStats(
                         peakPct, rmsPct, capture.clipped, capture.samples, capture.source);
                 studioWorkspaceView.setWaveform(liveWave, liveCount);
+            }
+            if (voiceBodyActive && voiceBodyField != null) {
+                int liveCount = recorder.copyLatest(liveWave);
+                if (liveCount > 0) {
+                    // Reuse the existing JNI -> freestanding C Goertzel observer.
+                    NativeDsp.nativeSpectrum(liveWave, liveCount, 1, voiceBodySpectrum);
+                    voiceBodyField.showFrame(
+                            voiceBodySpectrum, voiceBodySpectrum.length,
+                            capture.samples,
+                            voiceBodyProbe == null ? null : voiceBodyProbe.snapshot());
+                }
             }
             ui.postDelayed(this, 500);
         }
@@ -354,6 +371,34 @@ public final class MainActivity extends Activity {
             startActivity(intent);
         });
         panel.addView(waveLab);
+
+        panel.addView(sectionLabel("VOICE × BODY · CAMPO VIBROACÚSTICO EXPERIMENTAL"));
+        voiceBodyToggle = button("▶ Observar voz + movimento (durante REC)");
+        voiceBodyToggle.setOnClickListener(v -> {
+            if (voiceBodyActive) {
+                stopVoiceBodyObservation();
+                return;
+            }
+            if (recorder == null || processingGate.busy() || calibrationRunning ||
+                    evidenceRunning) {
+                status.setText("VOICE_BODY_BLOCKED · iniciar REC primeiro; sem segunda captura");
+                return;
+            }
+            // Explicit opt-in. Unavailable accelerometer is displayed, never invented.
+            voiceBodyProbe = VoiceBodyMotionProbe.begin(this);
+            voiceBodyActive = true;
+            voiceBodyField.setVisibility(View.VISIBLE);
+            voiceBodyToggle.setText("■ Parar observação voz + movimento");
+            status.setText("VOICE_BODY=OBSERVING · PCM existente + μ∆ local" +
+                    "\nPULSO=TOKEN_VAZIO · STRESS=TOKEN_VAZIO · sem exportação");
+        });
+        panel.addView(voiceBodyToggle);
+        voiceBodyField = new VoiceBodyFieldView(this);
+        voiceBodyField.setVisibility(View.GONE);
+        panel.addView(voiceBodyField, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(228)));
+        panel.addView(sectionLabel("Faixas Goertzel/16 + acelerômetro μ∆ relativo;" +
+                " filamentos são visualização, não campo magnético medido."));
 
         panel.addView(sectionLabel("LAB A/B · REPRODUZIR → CAPTAR → COMPARAR"));
         Button abCycle = button("▶ Orquestrar teste físico / 16 faixas");
@@ -960,6 +1005,7 @@ public final class MainActivity extends Activity {
             return;
         }
 
+        stopVoiceBodyObservation();
         AudioRecorderEngine.CaptureStats capture = recorder.getStats();
         int sampleRate = recorder.getSampleRate();
         int channels = recorder.getChannels();
@@ -1297,8 +1343,26 @@ public final class MainActivity extends Activity {
         }
     }
 
+    private void stopVoiceBodyObservation() {
+        voiceBodyActive = false;
+        if (voiceBodyProbe != null) {
+            voiceBodyProbe.stop();
+            voiceBodyProbe = null;
+        }
+        if (voiceBodyToggle != null) {
+            voiceBodyToggle.setText("▶ Observar voz + movimento (durante REC)");
+        }
+        if (voiceBodyField != null) voiceBodyField.finish();
+    }
+
+    @Override protected void onPause() {
+        stopVoiceBodyObservation(); // No sensor observation in background.
+        super.onPause();
+    }
+
     @Override
     protected void onDestroy() {
+        stopVoiceBodyObservation();
         guide.stop();
         telemetryRunning = false;
         stopPrompter();
