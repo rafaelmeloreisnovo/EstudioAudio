@@ -18,6 +18,9 @@ add_library(rfa_manifold_core STATIC
     rfa_voice_core.c
     rfa_playback_observer_core.c
     rfa_tele_tts_core.c
+    rfa_sensor_delta_core.c
+    rfa_tts_pcm_guard_core.c
+    rfa_dual_watchdog_core.c
     rfa_ptbr_core.c
     rfa_timbre_core.c
     rfa_measure_core.c
