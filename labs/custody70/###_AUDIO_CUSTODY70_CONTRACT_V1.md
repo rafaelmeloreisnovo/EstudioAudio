@@ -38,3 +38,24 @@ Uma única tomada de microfone de até 2 s, transformada num áudio intencionalm
 **Rollback:** remover somente o HTML/contrato do laboratório; nenhum módulo Android/CI existente é alterado.
 
 **Origem documental:** `rmr/crypto/CUSTODY.md`, `rmr/crypto/tools/forensic_time_attest.py`, `rmr/crypto/ZIP_BITSTACK_CUSTODY_PROFILE.md` em `rafaelmeloreisnovo/BLAKE3`; `docs/ZRF_CFR_FORMAT_V1.md` do EstudioAudio.
+## Sucessor V1.1 — inversão de bits, ZIP canônico e correções
+
+**Precedência:** o V1.1 fecha a aceitação de metadados ignorados. É um perfil ZIP restrito, não leitor ZIP universal.
+
+- **CRC original:** bit alterado em payload é rejeitado pelo CRC. **CRC refeito:** alterações em demo.wav/original.enc com manifesto intacto falham no SHA-256.
+- **Autenticação:** um atacante pode reconstruir CRC, SHA público e hashchain; visitante ainda pode receber PUBLIC_DIGESTS_MATCH_NOT_AUTHENTICATED. Isso não prova origem. HMAC do proprietário rejeita reconstrução sem a chave.
+- **ZIP canônico:** quatro entradas em ordem fixa; cabeçalhos locais/centrais exigem versões definidas, DOS timestamp zerado, flags e método exatos, discos/atributos zero, offsets contíguos, EOCD sem comentário, sem extras ou gaps. Divergência falha mesmo com CRC corrigido.
+- **HMAC:** seal.hmac adulterado com CRC refeito pode passar na checagem pública não autenticada; abertura do proprietário deve falhar.
+- **Manifesto:** schema de campos fechado; digests hex minúsculos, tipos/claims e papéis exatos, Base64 canônico e comprimentos de fonte/derivado/cifra coerentes.
+- **Interface:** importação repetida do mesmo ZIP; expiração reavaliada ao clicar nos dois players mesmo após exportação/desbloqueio; ObjectURL revogado se play() rejeitar; comprimento de wave divergente exposto.
+- **Validade:** SYSTEM_CLOCK_UNVERIFIED significa política visual, não revogação criptográfica ou timestamp confiável.
+
+### Gate de regressão
+
+node test.mjs && node regression.mjs --strict
+
+Execução local com amostra sintética 2 s: 31/31 verificações PASS_SCOPED; 208/208 bits de metadados ZIP e 64/64 bits dos campos CRC rejeitados; CRC refeito vs SHA, reconstrução de hashes públicos vs HMAC, expiração, duplo import, schema, Base64, reprodução, senha errada, limite de 70 KiB. ZIP amostral 33.593 bytes. Isso NÃO é varredura exaustiva de cada bit do ZIP.
+
+CI remoto específico da nova suíte, navegador físico e microfone Android permanecem NOT_RUN até recibo do HEAD. claim_allowed=false.
+
+**Rollback:** restaurar somente labs/custody70/ no commit anterior do PR; main, APK, JNI e Android intocados.
