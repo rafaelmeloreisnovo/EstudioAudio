@@ -26,7 +26,7 @@ const sandbox = {
   Audio: class {}, setTimeout, clearTimeout, btoa, atob
 };
 vm.createContext(sandbox);
-const html = fs.readFileSync(new URL('./###_AUDIO_CUSTODY70_V1.html', import.meta.url), 'utf8');
+const html = fs.readFileSync(new URL('./%23%23%23_AUDIO_CUSTODY70_V1.html', import.meta.url), 'utf8');
 vm.runInContext(html.split('<script>')[1].split('</script>')[0], sandbox);
 const core = vm.runInContext('({wav,checkWav,derivative,pcmFromFloat,sha,zipRead})', sandbox);
 const samples = new Float32Array(16000);
