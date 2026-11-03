@@ -36,4 +36,6 @@ jobs:
           node -e 'const major=Number(process.versions.node.split(".")[0]);if(major<22){console.error("Need maintained Node >=22, refusing Node 20");process.exit(1)}'
           node labs/custody70/test.mjs
           node labs/custody70/regression.mjs --strict
+          node labs/custody70/test_v12.mjs
+          node labs/custody70/regression_v12.mjs --strict
           printf 'CUSTODY70_SCOPED_NODE_PASS=%s\n' "$(git rev-parse HEAD)"
