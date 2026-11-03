@@ -80,3 +80,14 @@ const original = new Uint8Array(await webcrypto.subtle.decrypt({
 assert.deepEqual(original, knownWav);
 console.log('PASS: V1.2 seed verified, explicit seed enforced, known synthetic source 16000/16000 samples reproduced without password-derived estimate');
 console.log('SECURITY_CAVEAT: public known synthetic tone is 100% reproducible; noise is not encryption or DRM');
+
+let highSeedCount=0;
+for(let i=0;i<32;i++){
+  const salt=Uint8Array.from({length:16},(_,j)=>(i*17+j)&255);
+  const kk=await core.keys('DemoPass!2026',salt);
+  assert(Number.isInteger(kk.seed)&&kk.seed>0&&kk.seed<=0xffffffff);
+  if(kk.seed>=0x80000000)highSeedCount++;
+  assert.equal(core.derivative(source,'rain',kk.seed).length,source.length);
+}
+assert(highSeedCount>0, 'fixed-salt corpus must exercise sign-bit boundary');
+console.log('PASS: UNSIGNED_SEED_SALT_CORPUS 32/32; highBit='+highSeedCount+' never signed negative');
