@@ -39,7 +39,7 @@ if [[ -f labs/custody70/test.mjs ]]; then
     node labs/custody70/test_v12.mjs
     node labs/custody70/regression_v12.mjs --strict
   fi
-  printf 'CUSTODY70_HOSTED_AUDIO_GATE=PASS_SCOPED_NOT_APK\\n'
+  printf 'CUSTODY70_HOSTED_AUDIO_GATE=PASS_SCOPED_NOT_APK\n'
 fi
 bash ci/distribution-contract-gate.sh
 bash ci/test-provider-preflight.sh
