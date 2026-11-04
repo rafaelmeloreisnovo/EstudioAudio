@@ -1,0 +1,41 @@
+name: custody70-scoped-node
+
+on:
+  pull_request:
+    paths:
+      - 'labs/custody70/**'
+      - '.github/workflows/custody70-scoped.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  custody70-node:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Fetch exact workflow ref with platform git only
+        env:
+          SOURCE_URL: ${{ github.server_url }}/${{ github.repository }}.git
+          SOURCE_REF: ${{ github.ref }}
+          EXPECTED_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init -q .
+          git remote add origin "$SOURCE_URL"
+          git -c protocol.version=2 fetch --no-tags --depth=1 origin "$SOURCE_REF"
+          git checkout -q --detach --force FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+      - name: Bounded browser-core ZIP and bitflip regression (NOT APK)
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --version
+          node -e 'const major=Number(process.versions.node.split(".")[0]);if(major<22){console.error("Need maintained Node >=22, refusing Node 20");process.exit(1)}'
+          node labs/custody70/test.mjs
+          node labs/custody70/regression.mjs --strict
+          node labs/custody70/test_v12.mjs
+          node labs/custody70/regression_v12.mjs --strict
+          printf 'CUSTODY70_SCOPED_NODE_PASS=%s\n' "$(git rev-parse HEAD)"

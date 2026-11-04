@@ -26,6 +26,21 @@ while IFS= read -r -d '' script; do
     bash -n "$script" || fail "BASH_SYNTAX:$script"
 done < <(find ci -type f -name '*.sh' -print0)
 bash ci/rafaelia-pipeline.sh topology
+# CUSTODY70_CANONICAL_FAST_GATE: hosted Node only; never call this a freestanding/Android test.
+# Keep exactly one active workflow (.github/workflows/START.yml), as topology requires.
+if [[ -f labs/custody70/test.mjs ]]; then
+  command -v node >/dev/null 2>&1 || fail 'CUSTODY70_NODE_HOST_MISSING'
+  test -f labs/custody70/regression.mjs || fail 'CUSTODY70_V1_REGRESSION_MISSING'
+  node labs/custody70/test.mjs
+  node labs/custody70/regression.mjs --strict
+  if [[ -f labs/custody70/###_AUDIO_CUSTODY70_V1_2.html ]]; then
+    test -f labs/custody70/test_v12.mjs || fail 'CUSTODY70_V12_TEST_MISSING'
+    test -f labs/custody70/regression_v12.mjs || fail 'CUSTODY70_V12_REGRESSION_MISSING'
+    node labs/custody70/test_v12.mjs
+    node labs/custody70/regression_v12.mjs --strict
+  fi
+  printf 'CUSTODY70_HOSTED_AUDIO_GATE=PASS_SCOPED_NOT_APK\n'
+fi
 bash ci/distribution-contract-gate.sh
 bash ci/test-provider-preflight.sh
 bash ci/test-android-device-install-receipt.sh
