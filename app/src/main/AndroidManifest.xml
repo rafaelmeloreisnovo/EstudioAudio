@@ -23,6 +23,11 @@
         android:supportsRtl="true"
         android:theme="@style/RafaeliaAudioTheme">
 
+        <!-- Informational UI only: no intent filter, private to this APK. -->
+        <activity
+            android:name=".StudioDiscoverActivity"
+            android:exported="false" />
+
         <activity
             android:name=".WavePhysicsLabActivity"
             android:exported="false" />

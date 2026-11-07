@@ -1,0 +1,19 @@
+name: EstudioAudio · discovery UI source guard
+on:
+  pull_request:
+    paths:
+      - 'app/src/main/java/io/rafaelia/audiostudio/MainActivity.java'
+      - 'app/src/main/java/io/rafaelia/audiostudio/StudioDiscoverActivity.java'
+      - 'app/src/main/AndroidManifest.xml'
+      - 'ci/studio-discover-ui-gate.py'
+      - '.github/workflows/studio-discover-ui.yml'
+  workflow_dispatch:
+jobs:
+  source-ui:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check source routes and truthful states
+        run: python3 ci/studio-discover-ui-gate.py

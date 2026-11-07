@@ -156,6 +156,21 @@ public final class MainActivity extends Activity {
         box.setPadding(pad, pad, pad, dp(16));
         box.setBackgroundColor(Color.rgb(10, 13, 17));
 
+        // Optional, read-only product discovery; never interrupts an audio flight.
+        Button discover = button("◈  EstudioAudio · Visão, recursos e links");
+        discover.setContentDescription("Abrir telas de recursos, confiança e links do EstudioAudio");
+        discover.setMinHeight(dp(52));
+        discover.setOnClickListener(v -> {
+            if (recorder != null || processingGate.busy() ||
+                    calibrationRunning || evidenceRunning) {
+                status.setText("STUDIO_DISCOVER_BLOCKED · finalize a sessão de áudio primeiro");
+                return;
+            }
+            startActivity(new Intent(this, StudioDiscoverActivity.class));
+        });
+        box.addView(discover, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(52)));
+
         status = new TextView(this);
         status.setTextSize(11f);
         status.setTextColor(Color.rgb(188, 200, 209));
