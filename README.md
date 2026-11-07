@@ -1,5 +1,8 @@
 # EstudioAudio
 
+> **Nova central de descoberta (candidata, não promovida):** quatro telas nativas com badges de estado, recursos, confiança e links navegáveis. [Contrato de UI e gates](docs/STUDIO_DISCOVER_UI_V1.md). Sem mudanças no núcleo DSP; status físico do HEAD ainda exige recibo.
+
+
 > **Lab A/B relativo (draft sem promocao):** [Orquestrar sweep, gravar pelo microfone, comparar 16 janelas e exportar CFR/recibo](docs/atlas/ESTUDIOAUDIO_20261023_AB_LOOPBACK_INDUSTRIAL_GATE_V1.md). Reusa o pipeline Android/C; nao constitui validacao de SPL/FFT nem prova fisica ate a rodada de dispositivo.
 
 **EstudioAudio** é o nome canônico do projeto; **Rafaelia Audio Studio** é denominação histórica preservada para rastreabilidade. Pacote Android, JNI, ABI e arquivos mantêm os nomes técnicos atuais até prova de compatibilidade de uma eventual migração.
