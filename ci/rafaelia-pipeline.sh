@@ -68,6 +68,7 @@ quality() {
 
   # Fail before Gradle when fast/full workflow routing or P0 contracts regress.
   bash ci/ci-lane-contract-gate.sh
+  python3 ci/studio-discover-ui-gate.py
   bash ci/sensor-permission-gate.sh
   python3 ci/test-permission-policy.py --selftest
   bash ci/bit-stack-core-gate.sh
