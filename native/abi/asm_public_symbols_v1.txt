@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-RAFCODE-Research-Commercial-0.1
+# Assembly symbols are separate from C-only public_symbols_v1.txt host audit.
+rfa_pcm_abs_u16
+rfa_pcm_sat_add_s16

@@ -68,12 +68,14 @@ quality() {
 
   # Fail before Gradle when fast/full workflow routing or P0 contracts regress.
   bash ci/ci-lane-contract-gate.sh
+  python3 ci/studio-discover-ui-gate.py
   bash ci/sensor-permission-gate.sh
   python3 ci/test-permission-policy.py --selftest
   bash ci/bit-stack-core-gate.sh
   bash ci/core-byte-parity-gate.sh
   bash ci/core-adaptive-sanitizer-gate.sh
   bash ci/core-portability-gate.sh
+  bash ci/asm-pcm-leaf-gate.sh
 
   gradle :app:rafaeliaBuildContract --no-daemon --stacktrace
   gradle :app:rafaeliaJavaGate --no-daemon --stacktrace
