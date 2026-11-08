@@ -75,3 +75,24 @@ target_link_options(rafaelia_audio PRIVATE
     -Wl,--gc-sections
     -Wl,--exclude-libs,ALL
 )
+
+# RAFAELIA ASM PCM: two independently compiled leaf modules per Android ABI.
+# Staged/no JNI calls until exact-head dual-device differential evidence.
+enable_language(ASM)
+if(ANDROID_ABI STREQUAL "armeabi-v7a")
+    set(RFA_PCM_ABS_SOURCE arch/armv7/rfa_pcm_abs_u16.S)
+    set(RFA_PCM_SAT_SOURCE arch/armv7/rfa_pcm_sat_add_s16.S)
+    set(RFA_PCM_MODULE_FLAGS -marm)
+elseif(ANDROID_ABI STREQUAL "arm64-v8a")
+    set(RFA_PCM_ABS_SOURCE arch/aarch64/rfa_pcm_abs_u16.S)
+    set(RFA_PCM_SAT_SOURCE arch/aarch64/rfa_pcm_sat_add_s16.S)
+    set(RFA_PCM_MODULE_FLAGS "")
+else()
+    message(FATAL_ERROR "RAFAELIA_PCM_UNSUPPORTED_ANDROID_ABI=${ANDROID_ABI}")
+endif()
+add_library(rfa_pcm_abs_u16 STATIC ${RFA_PCM_ABS_SOURCE})
+add_library(rfa_pcm_sat_add_s16 STATIC ${RFA_PCM_SAT_SOURCE})
+foreach(rfa_pcm_target rfa_pcm_abs_u16 rfa_pcm_sat_add_s16)
+    set_target_properties(${rfa_pcm_target} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    target_compile_options(${rfa_pcm_target} PRIVATE ${RFA_PCM_MODULE_FLAGS})
+endforeach()

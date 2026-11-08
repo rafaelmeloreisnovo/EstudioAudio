@@ -16,6 +16,7 @@ printf 'FAST_FULL_APK_BUILD=NOT_RUN\n'
 printf 'FAST_ARM_DEVICE=NOT_RUN\n'
 
 # Fail promptly before any heavyweight toolchain work.
+bash ci/asm-pcm-leaf-gate.sh
 bash ci/ci-lane-contract-gate.sh
   bash ci/sensor-permission-gate.sh
   python3 ci/test-permission-policy.py --selftest

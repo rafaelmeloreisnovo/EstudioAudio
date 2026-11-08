@@ -74,6 +74,7 @@ quality() {
   bash ci/core-byte-parity-gate.sh
   bash ci/core-adaptive-sanitizer-gate.sh
   bash ci/core-portability-gate.sh
+  bash ci/asm-pcm-leaf-gate.sh
 
   gradle :app:rafaeliaBuildContract --no-daemon --stacktrace
   gradle :app:rafaeliaJavaGate --no-daemon --stacktrace
