@@ -22,6 +22,12 @@ grep -Fq 'RELEASE_ELIGIBLE=false' "$wf" || fail 'FAST_RELEASE_BYPASS'
 grep -Fq 'github.actor == '\''rafaelmeloreisnovo'\''' "$wf" || fail 'PROVIDER_OWNER_GATE_REGRESSION'
 grep -Fq "needs.plan.outputs.delivery == 'provider-bootstrap'" "$wf" || fail 'MANUAL_ADMIN_REGRESSION'
 
+# Stable OS version prevents accidental runner-label major-version migration.
+# This is not a hermetic image guarantee: toolchain hashes remain separate gates.
+if grep -nE 'runs-on:[[:space:]]*ubuntu-latest([[:space:]]|$)' "$wf"; then
+  fail 'UNPINNED_RUNNER_LABEL'
+fi
+
 # Full APK delivery is bounded to successful same-job provenance and receipt,
 # without publishing a public release from an unprotected main branch.
 upload_pin='actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9'

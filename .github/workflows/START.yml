@@ -39,7 +39,7 @@ permissions:
 jobs:
   plan:
     name: 00 · plan / route
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       source_sha: ${{ steps.route.outputs.source_sha }}
@@ -114,7 +114,7 @@ jobs:
     name: gate / quick (source + host; NOT APK)
     if: ${{ needs.plan.outputs.validation_lane == 'fast' && github.event_name == 'pull_request' }}
     needs: plan
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 12
     permissions:
       contents: read
@@ -154,7 +154,7 @@ jobs:
     # Full exact-head artifact gate stays mandatory before merge/release.
     if: ${{ needs.plan.outputs.validation_lane == 'full' && needs.plan.outputs.delivery != 'provider-bootstrap' }}
     needs: plan
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
       contents: read
@@ -321,7 +321,7 @@ jobs:
     needs:
       - plan
       - gate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Configure this GitHub Environment with required approval/restricted main ref.
     # The source declaration alone DOES NOT prove provider reviewer enforcement.
     environment:
@@ -355,7 +355,7 @@ jobs:
     needs:
       - plan
       - gate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     env:
@@ -420,7 +420,7 @@ jobs:
     needs:
       - plan
       - gate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     env:

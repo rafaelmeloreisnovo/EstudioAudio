@@ -178,35 +178,58 @@ quality() {
 architecture() {
   log 'PHASE=40_ARCHITECTURE_ABI'
 
-  local ndk cc nm flags src
+  # Single source inventory: every C freestanding leaf is checked against the
+  # independent public symbol allowlist for both supported Android ABIs.
+  # Do not silently drop a leaf from the ABI gate when CMake adds one.
+  local ndk cc nm flags src_path src abi target count obj undef
+  local -a core_sources
   ndk="$ANDROID_SDK_ROOT/ndk/27.2.12479018"
   cc="$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/clang"
   nm="$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-nm"
   flags='-std=c11 -O3 -ffreestanding -fno-builtin -nostdinc -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables -fno-common -fno-optimize-sibling-calls -fvisibility=hidden -ffunction-sections -fdata-sections -Wall -Wextra -Werror -Iapp/src/main/cpp'
+  test -x "$cc" || fail "ARCH_CLANG_MISSING=$cc"
+  test -x "$nm" || fail "ARCH_NM_MISSING=$nm"
 
-  for src in rfa_zip32_core rfa_digest_core rfa_bit_stack_core dsp_core meter_core rfa_wave_core rfa_matrix_core rfa_block_core rfa_container_core rfa_fir_core rfa_time_core rfa_lms_core rfa_biquad_core rfa_voice_core rfa_playback_observer_core rfa_tele_tts_core rfa_ptbr_core rfa_timbre_core rfa_measure_core rfa_rac1_core rfa_audio_format_core rfa_verbo_core; do
-    "$cc" --target=armv7a-linux-androideabi29 $flags -c "app/src/main/cpp/$src.c" -o "$src.armv7.o"
-    "$nm" -u "$src.armv7.o" > "$src.armv7.undefined"
-    test ! -s "$src.armv7.undefined" || { cat "$src.armv7.undefined"; fail "ARMV7_UNDEFINED=$src"; }
+  core_sources=(app/src/main/cpp/*_core.c)
+  test "${#core_sources[@]}" -gt 0 && test -f "${core_sources[0]}" || fail 'ARCH_CORE_SOURCES_EMPTY'
+  for src_path in "${core_sources[@]}"; do
+    src="${src_path##*/}"
+    # The Android CMake producer must consume each audited micromodule.
+    grep -Fq "$src" app/src/main/cpp/CMakeLists.txt || fail "ARCH_CORE_NOT_IN_CMAKE=$src"
   done
+  grep -v '^[[:space:]]*#' native/abi/public_symbols_v1.txt |
+    sed '/^[[:space:]]*$/d' | LC_ALL=C sort > abi.expected
+  test -s abi.expected || fail 'ARCH_ABI_MANIFEST_EMPTY'
+  test "$(LC_ALL=C uniq -d abi.expected | wc -l)" -eq 0 || fail 'ARCH_ABI_MANIFEST_DUPLICATE'
 
-  : > abi.actual
-  for src in rfa_zip32_core rfa_digest_core rfa_bit_stack_core dsp_core meter_core rfa_wave_core rfa_matrix_core rfa_block_core rfa_container_core rfa_fir_core rfa_time_core rfa_lms_core rfa_biquad_core rfa_voice_core rfa_playback_observer_core rfa_tele_tts_core rfa_ptbr_core rfa_timbre_core rfa_measure_core rfa_rac1_core rfa_audio_format_core rfa_verbo_core; do
-    "$nm" --defined-only --extern-only "$src.armv7.o" | awk -v src="$src" '{print src ":" $NF}' >> abi.actual
+  for abi in armv7 aarch64; do
+    case "$abi" in
+      armv7) target=armv7a-linux-androideabi29 ;;
+      aarch64) target=aarch64-linux-android29 ;;
+      *) fail "UNSUPPORTED_ARCH=$abi" ;;
+    esac
+    : > "abi.$abi.actual"
+    count=0
+    for src_path in "${core_sources[@]}"; do
+      src="${src_path##*/}"
+      src="${src%.c}"
+      obj="${src}.${abi}.o"
+      undef="${src}.${abi}.undefined"
+      "$cc" "--target=$target" $flags -c "$src_path" -o "$obj"
+      "$nm" -u "$obj" > "$undef"
+      test ! -s "$undef" || { cat "$undef"; fail "ARCH_UNDEFINED[$abi]=$src"; }
+      "$nm" --defined-only --extern-only "$obj" |
+        awk -v src="$src" 'NF >= 2 {print src ":" $NF}' >> "abi.$abi.actual"
+      count=$((count + 1))
+    done
+    LC_ALL=C sort -o "abi.$abi.actual" "abi.$abi.actual"
+    diff -u abi.expected "abi.$abi.actual" || fail "ARCH_ABI_DRIFT[$abi]"
+    printf 'ARCH_ABI[%s]=PASS modules=%s zero_undefined=YES\n' "$abi" "$count"
   done
-  sort -o abi.actual abi.actual
-  grep -v '^[[:space:]]*#' native/abi/public_symbols_v1.txt | grep -v '^[[:space:]]*$' | sort > abi.expected
-  diff -u abi.expected abi.actual
-
-  for src in rfa_zip32_core rfa_digest_core rfa_bit_stack_core dsp_core meter_core rfa_wave_core rfa_matrix_core rfa_block_core rfa_container_core rfa_fir_core rfa_time_core rfa_lms_core rfa_biquad_core rfa_voice_core rfa_playback_observer_core rfa_tele_tts_core rfa_ptbr_core rfa_timbre_core rfa_measure_core rfa_rac1_core rfa_audio_format_core rfa_verbo_core; do
-    "$cc" --target=aarch64-linux-android29 $flags -c "app/src/main/cpp/$src.c" -o "$src.aarch64.o"
-    "$nm" -u "$src.aarch64.o" > "$src.aarch64.undefined"
-    test ! -s "$src.aarch64.undefined" || { cat "$src.aarch64.undefined"; fail "AARCH64_UNDEFINED=$src"; }
-  done
-
   echo 'ARMV7_ZERO_UNDEFINED=PASS'
   echo 'ARMV7_ABI_MANIFEST=PASS'
   echo 'AARCH64_ZERO_UNDEFINED=PASS'
+  echo 'AARCH64_ABI_MANIFEST=PASS'
 }
 
 evidence() {
