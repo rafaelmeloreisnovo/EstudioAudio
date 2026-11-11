@@ -51,6 +51,7 @@ bash ci/test-android-device-install-receipt.sh
 bash ci/audio-session-gate.sh
 bash ci/zipraf-lowlevel-gate.sh
 bash ci/wave-lab-gate.sh
+bash ci/room-guard-gate.sh
 bash ci/tele-tts-core-gate.sh
 bash ci/sensor-tts-specialists-gate.sh
 bash ci/playback-observer-core-gate.sh
