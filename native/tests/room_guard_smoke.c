@@ -10,7 +10,7 @@ static void position(rfa_room_band_q8 *b, int index, int db, rfa_u8 flags) {
     b->positions[index].flags = flags;
 }
 int main(void) {
-    rfa_room_band_q8 bands[2] = {{{{0, 0}}, 0, 0}, {{{0, 0}}, 0, 0}};
+    rfa_room_band_q8 bands[2] = {0};
     rfa_room_decision_q8 decisions[2];
     rfa_room_guard_policy_q8 policy = {3, 8 * 256, 6 * 256};
     int i;
