@@ -66,6 +66,7 @@ rfa_measure_core:rfa_exp_sweep_reset_q31
 rfa_measure_core:rfa_relative_transfer_search
 rfa_measure_core:rfa_sweep_band_profile_q20
 rfa_measure_core:rfa_sync_sequence_q15
+rfa_room_guard_core:rfa_room_guard_plan_q8
 rfa_rac1_core:rfa_rac1_bound_bytes
 rfa_rac1_core:rfa_rac1_encode_i16
 rfa_rac1_core:rfa_rac1_decode_i16
