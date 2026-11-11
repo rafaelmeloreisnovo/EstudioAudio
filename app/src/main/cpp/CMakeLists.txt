@@ -24,6 +24,7 @@ add_library(rfa_manifold_core STATIC
     rfa_ptbr_core.c
     rfa_timbre_core.c
     rfa_measure_core.c
+    rfa_room_guard_core.c
     rfa_rac1_core.c
     rfa_audio_format_core.c
 )
