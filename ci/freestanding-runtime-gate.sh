@@ -10,6 +10,9 @@ test -n "${ANDROID_SDK_ROOT:-}" || fail 'ANDROID_SDK_ROOT=TOKEN_VAZIO'
 ndk="$ANDROID_SDK_ROOT/ndk/27.2.12479018"
 cc="$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/clang"
 nm="$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-nm"
+readelf="$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+test -x "$readelf" || fail "LLVM_READELF_MISSING=$readelf"
+source ci/elf-header-contract.sh
 test -x "$cc" || fail "CLANG_MISSING=$cc"
 test -x "$nm" || fail "LLVM_NM_MISSING=$nm"
 
@@ -36,6 +39,7 @@ for target in armv7a-linux-androideabi29 aarch64-linux-android29; do
     writable=".runtime-gate/${src}.${target}.writable-state"
 
     "$cc" --target="$target" $flags -c "app/src/main/cpp/$src.c" -o "$obj"
+    rfa_assert_elf_header "$readelf" "$obj" "$target" || fail "ELF_ABI_HEADER_MISMATCH=$src target=$target"
 
     "$nm" -u "$obj" > "$undef"
     if test -s "$undef"; then
@@ -60,6 +64,9 @@ if grep -RInE '__aeabi_(i|u)div|__aeabi_(l|ul)div|__(u?div|u?mod)di3' .runtime-g
   fail 'ARM_DIVISION_RUNTIME_HELPER=DETECTED'
 fi
 
+echo 'ARMV7_ELF_HEADER=ELF32_LITTLE_ENDIAN_ARM_REL'
+echo 'AARCH64_ELF_HEADER=ELF64_LITTLE_ENDIAN_AARCH64_REL'
+echo 'ELF_HEADER_SCOPE=OBJECT_ONLY_NOT_TARGET_EXECUTION'
 echo 'ARMV7_RUNTIME_UNDEFINED=0'
 echo 'AARCH64_RUNTIME_UNDEFINED=0'
 echo 'ARMV7_WRITABLE_PERSISTENT_SYMBOLS=0'
