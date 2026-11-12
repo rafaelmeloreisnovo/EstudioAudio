@@ -6,6 +6,7 @@ package io.rafaelia.audiostudio;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /** Host vectors for retention/quality/export. Does not exercise Android hardware. */
 public final class InstrumentSurveyModelTest {
@@ -59,6 +60,11 @@ public final class InstrumentSurveyModelTest {
     }
 
     private static void configVectors() {
+        check(new InstrumentSurveyText(Locale.forLanguageTag("pt-BR")).t("title").equals("Varredura de instrumentos"), "Portuguese UI");
+        check(new InstrumentSurveyText(Locale.ENGLISH).t("title").equals("Instrument survey"), "English UI");
+        check(new InstrumentSurveyText(Locale.forLanguageTag("es")).t("title").equals("Barrido de instrumentos"), "Spanish UI");
+        check(new InstrumentSurveyText(Locale.FRENCH).t("title").equals("Relevé des instruments"), "French UI");
+        check(new InstrumentSurveyText(Locale.forLanguageTag("de")).languageCode().equals("pt-BR"), "bounded locale fallback");
         fails(() -> new InstrumentSurveyModel.Config(99, 1, 1, 2, 0, 0), "short window");
         fails(() -> new InstrumentSurveyModel.Config(600001, 1, 1, 2, 0, 0), "long window");
         fails(() -> new InstrumentSurveyModel.Config(100, 0, 1, 2, 0, 0), "zero rows");
@@ -99,7 +105,7 @@ public final class InstrumentSurveyModelTest {
         check(sum.get(14).equals("DESCRIPTIVE_ONLY_NOT_CALIBRATION"), "no physical claim");
         List<String> cfg = csv(m.configurationCsv()).get(1);
         check(cfg.get(10).equals("2"), "explicit raw eviction count");
-        check(m.dashboard().contains("variância: 10.0"), "dashboard exposes variance");
+        check(m.dashboard(new InstrumentSurveyText(Locale.forLanguageTag("pt-BR"))).contains("variância: 10.0"), "dashboard exposes variance");
         InstrumentSurveyModel timed = model(4, 2);
         sample(timed, "sensor.0.x", 0, 0, 1, Double.NaN, -1, "OBSERVED");
         sample(timed, "sensor.0.x", 1000000000L, 1000000000L, 1, Double.NaN, -1, "OBSERVED");

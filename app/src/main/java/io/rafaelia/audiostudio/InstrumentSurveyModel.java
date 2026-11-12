@@ -256,12 +256,14 @@ public final class InstrumentSurveyModel {
                 + ',' + evicted + ",SESSION_ACCEPTED_DESCRIPTIVE_ONLY\n";
     }
 
-    public synchronized String dashboard() {
-        StringBuilder text = new StringBuilder("Aprendizado descritivo da sessão\n");
-        text.append("Amostras aceitas: ").append(accepted).append(" | rejeitadas: ").append(rejected)
-                .append("\nRetidas: ").append(rawCount).append('/').append(config.maxRows * config.rotationCount)
-                .append(" | rotações: ").append(rotations).append(" | removidas do anel: ").append(evicted)
-                .append("\nEstatísticas preservam aceitas da sessão; não comprovam calibração ou diagnóstico.\n");
+    public synchronized String dashboard(InstrumentSurveyText labels) {
+        if (labels == null) throw new IllegalArgumentException("labels_required");
+        StringBuilder text = new StringBuilder(labels.t("descriptive")).append('\n');
+        text.append(labels.t("accepted")).append(": ").append(accepted).append(" | ")
+                .append(labels.t("rejected")).append(": ").append(rejected)
+                .append('\n').append(labels.t("retained")).append(": ").append(rawCount)
+                .append('/').append(config.maxRows * config.rotationCount)
+                .append(" | ").append(labels.t("evicted")).append(": ").append(evicted).append('\n');
         int displayed = 0;
         for (int i = 0; i < itemCount; ++i) {
             Registered entry = items[i];
@@ -276,18 +278,20 @@ public final class InstrumentSurveyModel {
             }
             if (total + refused == 0) continue;
             if (displayed++ == 12) {
-                text.append("Mais itens disponíveis na exportação.\n");
+                text.append(labels.t("more_export")).append('\n');
                 break;
             }
             text.append(entry.item.label).append(": n=").append(total)
-                    .append(" | rejeitadas=").append(refused)
-                    .append(" | setores com mínimo de amostras=").append(populated).append("/8\n");
+                    .append(" | ").append(labels.t("rejected")).append('=').append(refused)
+                    .append(" | ").append(labels.t("sector")).append('=').append(populated).append("/8\n");
             Summary last = entry.sectors[latest];
-            text.append("  Último setor: ").append(latest - 1).append(" | variância: ")
+            text.append("  ").append(labels.t("sector")).append(": ").append(latest - 1).append(" | ").append(labels.t("variance")).append(": ")
                     .append(last.accepted > 1 && !categorical(entry.item)
                             ? number(Math.max(0, last.m2) / (last.accepted - 1)) + " (" + entry.item.unit + ")²"
-                            : "indisponível")
-                    .append(" | densidade aceita: ").append(rate(last)).append(" Hz\n");
+                            : labels.t("not_available"))
+                    .append(" | ").append(labels.t("density")).append(": ")
+                    .append(last.accepted > 1 && last.lastSourceNs > last.firstSourceNs
+                            ? rate(last) + " Hz" : labels.t("not_available")).append('\n');
         }
         return text.toString();
     }

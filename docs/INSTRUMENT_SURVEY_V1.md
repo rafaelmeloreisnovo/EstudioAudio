@@ -8,6 +8,11 @@ fontes públicas selecionadas pelo usuário. A seleção é organizada por famí
 item. O painel não liga, desliga, sintoniza ou transmite por Wi-Fi, Bluetooth, celular
 ou GNSS.
 
+A interface acompanha o idioma do Android em português do Brasil, inglês, espanhol ou
+francês. Outros idiomas usam português do Brasil como retorno explícito. Códigos de
+estado, nomes de campos e versões do CSV permanecem estáveis e independentes do idioma;
+eles são traduzidos para apresentação sem alterar os arquivos de evidência.
+
 ## Fontes e limites
 
 | Fonte | Observação permitida | Limite material |

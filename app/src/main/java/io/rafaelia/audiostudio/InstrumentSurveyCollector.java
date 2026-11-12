@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Locale;
 
 /** Foreground platform edge. Uses only public APIs, never changes radio settings.
  * Snapshot radio data can be cached; original monotonic timestamps are retained.
@@ -57,6 +58,7 @@ public final class InstrumentSurveyCollector implements SensorEventListener, Loc
     private final Listener listener;
     private final SensorManager sensors;
     private final LocationManager locations;
+    private final InstrumentSurveyText text;
     private final ArrayList<InstrumentSurveyModel.Item> items = new ArrayList<>();
     private final ArrayList<SensorSource> sensorSources = new ArrayList<>();
     private final Set<String> selected = new HashSet<>();
@@ -109,34 +111,37 @@ public final class InstrumentSurveyCollector implements SensorEventListener, Loc
         if (context == null || listener == null) throw new IllegalArgumentException("context/listener");
         this.context = context.getApplicationContext();
         this.listener = listener;
+        text = new InstrumentSurveyText(Locale.getDefault());
         sensors = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
         locations = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         discoverSensors();
-        add("location.latitude", "Localização", "GPS / WGS84", "Latitude", "degree");
-        add("location.longitude", "Localização", "GPS / WGS84", "Longitude", "degree");
-        add("location.altitude", "Localização", "GPS / WGS84", "Altitude elipsoidal", "m");
-        add("location.accuracy", "Localização", "GPS / WGS84", "Precisão horizontal estimada", "m");
-        add("location.speed", "Localização", "GPS / WGS84", "Velocidade", "m/s");
-        add("location.bearing", "Localização", "GPS / WGS84", "Rumo do deslocamento", "degree");
-        add("gnss.satellites", "Localização", "GNSS", "Satélites reportados", "count");
-        add("gnss.used", "Localização", "GNSS", "Satélites usados no fix", "count");
-        add("gnss.mean_cn0", "Localização", "GNSS", "C/N0 médio reportado", "dB-Hz");
-        add("cell.cid", "Rádio", "Celular / conexão servidora", "Cell ID / NCI", "id");
-        add("cell.rat", "Rádio", "Celular / conexão servidora", "Tecnologia de rádio Android", "id");
-        add("cell.mcc", "Rádio", "Celular / conexão servidora", "Código do país MCC", "id");
-        add("cell.mnc", "Rádio", "Celular / conexão servidora", "Código da rede MNC", "id");
-        add("cell.mnc_digits", "Rádio", "Celular / conexão servidora", "Comprimento do MNC (preserva zeros)", "id");
-        add("cell.area", "Rádio", "Celular / conexão servidora", "Área LAC / TAC", "id");
-        add("cell.pci", "Rádio", "Celular / conexão servidora", "PCI / PSC / BSIC", "id");
-        add("cell.channel", "Rádio", "Celular / conexão servidora", "Canal ARFCN", "id");
-        add("cell.dbm", "Rádio", "Celular / conexão servidora", "Sinal da célula servidora", "dBm");
-        add("wifi.rssi", "Rádio", "Wi-Fi / cache", "RSSI da rede de referência", "dBm");
-        add("wifi.frequency", "Rádio", "Wi-Fi / cache", "Frequência da rede de referência", "MHz");
-        add("wifi.count", "Rádio", "Wi-Fi / cache", "Redes reportadas no cache", "count");
-        add("bluetooth.enabled", "Rádio", "Bluetooth / adaptador", "Adaptador habilitado", "boolean");
-        add("clock.elapsed_ms", "Sistema", "Relógio", "Tempo desde inicialização", "ms");
-        add("capability.servicemode", "Capacidades", "Diagnóstico do fabricante", "ServiceMode: sem API pública", "status");
-        add("capability.tower_database", "Capacidades", "Base geográfica", "Coordenadas de torres: base não conectada", "status");
+        String location = text.t("family_location"), radio = text.t("family_radio");
+        String cell = text.t("group_cell");
+        add("location.latitude", location, "GPS / WGS84", text.t("latitude"), "°");
+        add("location.longitude", location, "GPS / WGS84", text.t("longitude"), "°");
+        add("location.altitude", location, "GPS / WGS84", text.t("altitude"), "m");
+        add("location.accuracy", location, "GPS / WGS84", text.t("horizontal_accuracy"), "m");
+        add("location.speed", location, "GPS / WGS84", text.t("speed"), "m/s");
+        add("location.bearing", location, "GPS / WGS84", text.t("bearing"), "°");
+        add("gnss.satellites", location, "GNSS", text.t("satellites"), "1");
+        add("gnss.used", location, "GNSS", text.t("satellites_used"), "1");
+        add("gnss.mean_cn0", location, "GNSS", text.t("mean_cn0"), "dB-Hz");
+        add("cell.cid", radio, cell, text.t("cell_id") + " (CID/NCI)", "id");
+        add("cell.rat", radio, cell, text.t("radio_technology") + " (RAT)", "id");
+        add("cell.mcc", radio, cell, text.t("country_code") + " (MCC)", "id");
+        add("cell.mnc", radio, cell, text.t("network_code") + " (MNC)", "id");
+        add("cell.mnc_digits", radio, cell, text.t("network_digits") + " (MNC)", "id");
+        add("cell.area", radio, cell, text.t("cell_area") + " (LAC/TAC)", "id");
+        add("cell.pci", radio, cell, text.t("physical_cell") + " (PCI/PSC/BSIC)", "id");
+        add("cell.channel", radio, cell, text.t("radio_channel") + " (ARFCN)", "id");
+        add("cell.dbm", radio, cell, text.t("cell_signal"), "dBm");
+        add("wifi.rssi", radio, text.t("group_wifi"), text.t("wifi_signal") + " (RSSI)", "dBm");
+        add("wifi.frequency", radio, text.t("group_wifi"), text.t("wifi_frequency"), "MHz");
+        add("wifi.count", radio, text.t("group_wifi"), text.t("wifi_count"), "1");
+        add("bluetooth.enabled", radio, text.t("group_bluetooth"), text.t("adapter_enabled"), "0/1");
+        add("clock.elapsed_ms", text.t("family_system"), text.t("group_clock"), text.t("elapsed_time"), "ms");
+        add("capability.servicemode", text.t("family_capabilities"), text.t("group_manufacturer"), text.t("servicemode_label"), "status");
+        add("capability.tower_database", text.t("family_capabilities"), text.t("group_geographic"), text.t("tower_label"), "status");
     }
 
     private void add(String id, String family, String group, String label, String unit) {
@@ -153,7 +158,7 @@ public final class InstrumentSurveyCollector implements SensorEventListener, Loc
             if (unit == null || axes == null) {
                 ++unsupportedSensors;
                 if (capabilityCount < MAX_CAPABILITY_ITEMS) {
-                    add("capability.sensor." + capabilityCount++, "Capacidades", "Sensores não amostrados",
+                    add("capability.sensor." + capabilityCount++, text.t("family_capabilities"), text.t("unsupported_sensors"),
                             safeName(sensor.getName()) + " (tipo " + type + ")", "status");
                 } else ++omittedSensors;
                 continue;
@@ -162,7 +167,7 @@ public final class InstrumentSurveyCollector implements SensorEventListener, Loc
             String prefix = "sensor." + index++ + ".";
             String group = safeName(sensor.getName()) + " (#" + index + ")";
             sensorSources.add(new SensorSource(sensor, prefix, axes));
-            for (String axis : axes) add(prefix + axis, "Sensores", group, axis, unit);
+            for (String axis : axes) add(prefix + axis, text.t("family_sensors"), group, axis, unit);
             itemCount += axes.length;
         }
     }
@@ -212,18 +217,11 @@ public final class InstrumentSurveyCollector implements SensorEventListener, Loc
     public List<InstrumentSurveyModel.Item> inventory() { return new ArrayList<>(items); }
 
     public String status() {
-        return "session=" + lifecycle + "\nplatform=" + serviceState
-                + "\nprotected_or_unsupported_sensors=" + unsupportedSensors
-                + "\ninventory_limit_omitted_sensors=" + omittedSensors
-                + "\nsensor_accuracy=ANDROID_STATUS_NOT_PHYSICAL_CALIBRATION"
-                + "\npose=8_DEVICE_YAW_SECTORS_ROTATION_VECTOR_SELECTED_AND_FRESH_ONLY"
-                + "\ngnss_time=CALLBACK_RECEIPT_TIME_NO_RAW_MEASUREMENT_TIMESTAMP"
-                + "\ncell=FIRST_REGISTERED_PUBLIC_IDENTITY_HANDOVER_REQUIRES_NEW_SESSION"
-                + "\ncell_rat_codes=GSM:16,UMTS:3,LTE:13,NR:20;MNC_RESTORE_LEADING_ZEROS_USING_mnc_digits"
-                + "\nwifi=CACHE_ONLY_FIRST_REFERENCE_NETWORK_NO_ACTIVE_SCAN"
-                + "\nlocation_accuracy=HORIZONTAL_METRES_EXCEPT_ALTITUDE_VERTICAL_METRES"
-                + "\nservice_mode=NOT_PUBLIC_API\ntower_coordinates=NOT_AVAILABLE"
-                + "\ngeospatial_database=NOT_CONNECTED\nphysical_validation=NOT_RUN";
+        return text.t("session") + ": " + text.state(lifecycle)
+                + "\n" + text.t("platform") + ": " + text.state(serviceState)
+                + "\n" + text.t("unsupported_count") + ": " + unsupportedSensors
+                + "\n" + text.t("omitted_count") + ": " + omittedSensors
+                + "\n" + text.t("public_limits");
     }
 
     private boolean has(String permission) {
