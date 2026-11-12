@@ -172,9 +172,11 @@ final class WaveLabTrialMatrix {
             Arrays.sort(values);
             median[band] = count % 2 == 1 ? values[count/2]
                     : (values[count/2-1] / 2.0 + values[count/2] / 2.0);
-            relative[band] = 10.0 * Math.log10(median[band] / takes[0].linearPower[band]);
+            // Log-differences avoid overflow/underflow of large power ratios.
+            relative[band] = 10.0 * (Math.log10(median[band])
+                    - Math.log10(takes[0].linearPower[band]));
             span[band] = count < 2 ? Double.NaN
-                    : 10.0 * Math.log10(values[count-1] / values[0]);
+                    : 10.0 * (Math.log10(values[count-1]) - Math.log10(values[0]));
         }
         return new Report(count, median, relative, span);
     }
