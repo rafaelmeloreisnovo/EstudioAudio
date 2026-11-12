@@ -42,6 +42,7 @@ Repository relationship observed on 2026-10-04: `fork=false`. Project-authored s
 | understand μ∆ vibration | `MICRO_DELTA_VIBRATION_V1.md` |
 | audit claims/evidence | `VERIFICATION_AND_EVIDENCE.md` |
 | inspect Android permission/sensor boundaries | `SENSOR_PERMISSION_MATRIX_V4.md` |
+| configure contextual instrument surveys | `INSTRUMENT_SURVEY_V1.md` |
 | inspect authorship vs generated/platform bytes | `AUTHORIAL_BINARY_ORIGIN_V1.md` |
 | inspect repository license terms | `../LICENSE_RESEARCH_COMMERCIAL.md` |
 | inspect agent/change authority | `../AGENTS.md` |

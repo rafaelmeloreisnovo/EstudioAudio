@@ -71,6 +71,7 @@ quality() {
   python3 ci/studio-discover-ui-gate.py
   bash ci/sensor-permission-gate.sh
   python3 ci/test-permission-policy.py --selftest
+  bash ci/instrument-survey-gate.sh
   bash ci/bit-stack-core-gate.sh
   bash ci/core-byte-parity-gate.sh
   bash ci/core-adaptive-sanitizer-gate.sh

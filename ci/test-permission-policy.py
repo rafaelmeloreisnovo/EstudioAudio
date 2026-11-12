@@ -30,9 +30,12 @@ def validate(text):
     app = root.find('application')
     if app is None or app.get(A+'allowBackup') != 'false':
         raise ValueError('backup protection lost')
-    lab = next((a for a in app.findall('activity') if a.get(A+'name') == '.WavePhysicsLabActivity'), None)
-    if lab is None or lab.get(A+'exported') != 'false':
-        raise ValueError('lab export protection lost')
+    for activity in ('.WavePhysicsLabActivity', '.InstrumentSurveyActivity'):
+        lab = next((a for a in app.findall('activity') if a.get(A+'name') == activity), None)
+        if lab is None or lab.get(A+'exported') != 'false':
+            raise ValueError('lab export protection lost: ' + activity)
+    if next(a for a in app.findall('activity') if a.get(A+'name') == '.InstrumentSurveyActivity').get(A+'configChanges') != 'orientation|screenSize':
+        raise ValueError('survey rotation continuity lost')
 
 def main():
     parser = argparse.ArgumentParser()
@@ -49,6 +52,8 @@ def main():
             text.replace('</manifest>', '<uses-permission android:name="android.permission.RECORD_AUDIO" /></manifest>'),
             text.replace('android:allowBackup="false"', 'android:allowBackup="true"'),
             text.replace('android:name=".WavePhysicsLabActivity"\n            android:exported="false"', 'android:name=".WavePhysicsLabActivity" android:exported="true"'),
+            text.replace('android:name=".InstrumentSurveyActivity"\n            android:exported="false"', 'android:name=".InstrumentSurveyActivity" android:exported="true"'),
+            text.replace('android:configChanges="orientation|screenSize"', 'android:configChanges="screenSize"'),
             text.replace('android.permission.ACCESS_COARSE_LOCATION', 'android.permission.ACCESS_BACKGROUND_LOCATION'),
         ]
         for i, mutation in enumerate(mutations):
@@ -57,7 +62,7 @@ def main():
             except (ValueError, ET.ParseError):
                 continue
             raise AssertionError('mutation accepted: '+str(i))
-        print('PERMISSION_ADVERSARIAL=7_REJECTED')
+        print('PERMISSION_ADVERSARIAL=9_REJECTED')
     print('PERMISSION_XML_EXACT_PROFILE=PASS')
 if __name__ == '__main__':
     main()

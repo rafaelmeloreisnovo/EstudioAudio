@@ -32,6 +32,11 @@
             android:name=".WavePhysicsLabActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".InstrumentSurveyActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize" />
+
         <!-- Explicit Android Sharesheet target: bounded WAV PCM16, no network access. -->
         <activity
             android:name=".TimbreLearningLabActivity"

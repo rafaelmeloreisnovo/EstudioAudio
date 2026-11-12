@@ -21,3 +21,6 @@ java -cp "$tmp" io.rafaelia.audiostudio.WaveLabDSimulatorTest
 
 echo 'WAVE_LAB_PLATFORM_FREE_MATH=PASS_HOST'
 echo 'WAVE_LAB_UI_ANDROID_COMPILE=NOT_RUN_FAST_LANE'
+
+# Bounded instrument data model is part of both host and full quality routes.
+bash ci/instrument-survey-gate.sh

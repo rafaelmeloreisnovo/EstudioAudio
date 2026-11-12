@@ -30,6 +30,11 @@ import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.net.Uri;
 import android.telephony.CellInfo;
+import android.telephony.CellInfoCdma;
+import android.telephony.CellInfoGsm;
+import android.telephony.CellInfoLte;
+import android.telephony.CellInfoNr;
+import android.telephony.CellInfoWcdma;
 import android.telephony.TelephonyManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -89,6 +94,10 @@ public final class WavePhysicsLabActivity extends Activity implements SensorEven
         Button read = button("Observar GPS, Wi-Fi, celular, Bluetooth (somente leitura)");
         read.setOnClickListener(v -> readSnapshot());
         root.addView(read);
+        Button survey = button("Varredura de instrumentos · seleção, qualidade e aprendizado");
+        survey.setOnClickListener(v -> startActivity(new android.content.Intent(
+                this, InstrumentSurveyActivity.class)));
+        root.addView(survey);
         Button mic = button("Amostrar espectro local (microfone, 4096 amostras)");
         mic.setOnClickListener(v -> sampleMic());
         root.addView(mic);
@@ -244,8 +253,9 @@ public final class WavePhysicsLabActivity extends Activity implements SensorEven
                 int dbm = -200;
                 int reported = 0;
                 for (CellInfo item : values) {
-                    if (item.getCellSignalStrength() != null) {
-                        dbm = Math.max(dbm, item.getCellSignalStrength().getDbm());
+                    int value = cellDbm(item);
+                    if (value != Integer.MAX_VALUE) {
+                        dbm = Math.max(dbm, value);
                         ++reported;
                     }
                 }
@@ -268,6 +278,17 @@ public final class WavePhysicsLabActivity extends Activity implements SensorEven
             } catch (SecurityException e) { bluetooth = "TOKEN_VAZIO_BLUETOOTH_PERMISSION"; }
         }
         show();
+    }
+
+    /** CellInfo base accessors require API 30; typed accessors preserve minSdk 29. */
+    private static int cellDbm(CellInfo item) {
+        if (item instanceof CellInfoGsm) return ((CellInfoGsm) item).getCellSignalStrength().getDbm();
+        if (item instanceof CellInfoCdma) return ((CellInfoCdma) item).getCellSignalStrength().getDbm();
+        if (item instanceof CellInfoLte) return ((CellInfoLte) item).getCellSignalStrength().getDbm();
+        if (item instanceof CellInfoWcdma) return ((CellInfoWcdma) item).getCellSignalStrength().getDbm();
+        if (Build.VERSION.SDK_INT >= 29 && item instanceof CellInfoNr)
+            return ((CellInfoNr) item).getCellSignalStrength().getDbm();
+        return Integer.MAX_VALUE;
     }
 
     private void sampleMic() {
