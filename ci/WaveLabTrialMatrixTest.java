@@ -61,6 +61,17 @@ public final class WaveLabTrialMatrixTest {
         check(m.append(take(WaveLabTrialMatrix.Role.PRIMARY,'4',70000000000L,4.0))
                 ==WaveLabTrialMatrix.Decision.REJECTED_COMPLETE,"cap 3");
         check(m.count()==3,"no extra entry");
+        // Falsifier: ratio of 1e300/1e-300 must not become +Infinity.
+        WaveLabTrialMatrix extreme=new WaveLabTrialMatrix();
+        check(extreme.append(take(WaveLabTrialMatrix.Role.PRIMARY,'4',
+                10,1.0e-300))==WaveLabTrialMatrix.Decision.ACCEPTED_PRIMARY,"extreme primary");
+        check(extreme.append(take(WaveLabTrialMatrix.Role.SECONDARY,'5',
+                20000000000L,1.0e300))==WaveLabTrialMatrix.Decision.ACCEPTED_REPEAT,"extreme secondary");
+        check(extreme.append(take(WaveLabTrialMatrix.Role.TERTIARY,'6',
+                40000000000L,1.0e300))==WaveLabTrialMatrix.Decision.ACCEPTED_REPEAT,"extreme tertiary");
+        check(Double.isFinite(extreme.report().medianRelativeToPrimaryDb[0]) &&
+                Math.abs(extreme.report().medianRelativeToPrimaryDb[0]-6000.0)<1e-9,
+                "log-domain stable under extreme ratios");
     }
 
     private static void falsifiers() {
