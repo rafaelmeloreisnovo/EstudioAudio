@@ -1,0 +1,266 @@
+{
+  "summary": {
+    "schema": "rafaelia.wavelab.audit/1.0",
+    "audit_method": "Read-only local inspection of supplied ZIP bytes; ZIP CRC checks; SHA-256 independently calculated. No execution, no radio/sensor access, no original mutation, no repository write.",
+    "archive_count": 5,
+    "zip_crc_ok_count": 5,
+    "total_entries": 10,
+    "distinct_zip_sha256": 5,
+    "distinct_manifest_sha256": 1,
+    "distinct_observation_sha256": 5,
+    "audio_observation_timestamps_unique": 1,
+    "spectral_fingerprints_unique": 1,
+    "capture_interval_seconds": 3.985,
+    "accelerometer_event_counter_delta": 500,
+    "accelerometer_events_delta_rate_hz": 125.47,
+    "distinct_pcm_captures_proven": "TOKEN_VAZIO_NO_SAMPLE_STREAM",
+    "radio_mutation": "NOT_VERIFIED_EXTERNAL: records declare no mutation",
+    "claims_allowed": false,
+    "confidence": "PASS_SCOPED_ZIP_INTEGRITY_AND_RECORD_COMPARISON_ONLY",
+    "source_reference_crosscheck": {
+      "source_sha": "6be178da533d22564ae67d4e359668d8fc4f99d3",
+      "ci_run_id": "43117415889",
+      "source_match": true,
+      "note": "This verifies textual/manifest source SHA agreement, not independent runtime identity or build reproducibility."
+    },
+    "open_gaps": [
+      {
+        "id": "raw_audio_no_bytes",
+        "status": "TOKEN_VAZIO",
+        "impact": "Cannot independently rerun DSP or authenticate a capture from these ZIPs"
+      },
+      {
+        "id": "audio_cached_across_exports",
+        "status": "OBSERVED",
+        "impact": "Same six relative spectral values and same audio observation timestamp in all five packages"
+      },
+      {
+        "id": "zip_no_cryptographic_signature",
+        "status": "TOKEN_VAZIO",
+        "impact": "SHA-256 local receipts prove equality, not origin/authorship or tamper-proof signatures"
+      },
+      {
+        "id": "absolute_acoustics",
+        "status": "NOT_CALIBRATED",
+        "impact": "No traceable SPL reference, directional/echo distance calibration or multi-channel ambisonic evidence"
+      },
+      {
+        "id": "physical_radio_sensor_validation",
+        "status": "NOT_RUN",
+        "impact": "Read-only archive inspection cannot verify Android permission or radio mutability behavior"
+      },
+      {
+        "id": "mathematical_D",
+        "status": "SIMULATION_ONLY",
+        "impact": "Positive D bounded synthetic; negative D stops on magnitude bound; not physical diffusion evidence"
+      }
+    ]
+  },
+  "records": [
+    {
+      "archive": "Rafaelia_WaveLab_1794448585493.zip",
+      "archive_size_bytes": 2376,
+      "archive_sha256": "1e5bba17f363c36b26e81bac2af35a69dd0e24e4699fda1890694d5fbd689a3b",
+      "zip_integrity": "CRC32_OK",
+      "entries": {
+        "00_manifest.txt": {
+          "sha256": "19479399a636b73a5851717ca78b316a048b93d7e941045e9c6b70025ca458b3",
+          "size": 205
+        },
+        "10_observations.txt": {
+          "sha256": "efd63ee36918add48b09f5abbe5b5c50e5fd6140950726fdfb59e84a3b80897c",
+          "size": 1929
+        }
+      },
+      "capture_epoch_ms": 1794448585586,
+      "capture_local": "2026-11-11T22:56:25.586000-03:00",
+      "audio_observation_epoch_ms": 1794448563492,
+      "audio_age_seconds": 22.094,
+      "accelerometer_events_total": 2246,
+      "accelerometer_last_sample_age_ms": 104.538,
+      "accel_xyz_m_s2": [
+        1.005,
+        -0.064,
+        9.983
+      ],
+      "accel_delta_x_rms_m_s2": 0.2703,
+      "poincare_x_zero_up_crossings": 20,
+      "source_sha": "6be178da533d22564ae67d4e359668d8fc4f99d3",
+      "spectral_bins_relative_dbfs": "125Hz=-51.1917 dBFS; 250Hz=-59.4712 dBFS; 500Hz=-52.9669 dBFS; 1000Hz=-59.4460 dBFS; 2000Hz=-75.3946 dBFS; 4000Hz=-102.4022 dBFS; ",
+      "audio_label": "OBSERVED_PCM16_MONO_48K n=4096 window_ms=85.333 pose_sector=TOKEN_VAZIO",
+      "claim_allowed": "false",
+      "policy": "PASSIVE_READ_ONLY_NO_RADIO_MUTATIONS",
+      "calibration": "NOT_RUN model=D0*(1-tanh_P)+Dneg*H fixed_branch",
+      "gps": "TOKEN_VAZIO_GPS_NO_FIX",
+      "bluetooth": "ADAPTER_ENABLED=false BLE_SCAN=NOT_RUN NO_RADIO_MUTATION",
+      "zip_has_pcm_samples": false,
+      "manifest_integrity": "ZIP_STORED_CRC32_NOT_CRYPTOGRAPHIC_AUTHENTICITY",
+      "event_increments_from_previous": null,
+      "elapsed_since_previous_seconds": null
+    },
+    {
+      "archive": "Rafaelia_WaveLab_1794448587014.zip",
+      "archive_size_bytes": 2330,
+      "archive_sha256": "fec0726da8577cc63ee2be3792db6e636e60f3ceea32a90597155df32a126041",
+      "zip_integrity": "CRC32_OK",
+      "entries": {
+        "00_manifest.txt": {
+          "sha256": "19479399a636b73a5851717ca78b316a048b93d7e941045e9c6b70025ca458b3",
+          "size": 205
+        },
+        "10_observations.txt": {
+          "sha256": "4b1f5a79d8dfb5a339cac3f704c4b42da5f6634be04d4112e3cbc1fcbbbfde5f",
+          "size": 1883
+        }
+      },
+      "capture_epoch_ms": 1794448587068,
+      "capture_local": "2026-11-11T22:56:27.068000-03:00",
+      "audio_observation_epoch_ms": 1794448563492,
+      "audio_age_seconds": 23.576,
+      "accelerometer_events_total": 2434,
+      "accelerometer_last_sample_age_ms": 70.375,
+      "accel_xyz_m_s2": [
+        1.043,
+        -0.332,
+        9.983
+      ],
+      "accel_delta_x_rms_m_s2": 0.2619,
+      "poincare_x_zero_up_crossings": 20,
+      "source_sha": "6be178da533d22564ae67d4e359668d8fc4f99d3",
+      "spectral_bins_relative_dbfs": "125Hz=-51.1917 dBFS; 250Hz=-59.4712 dBFS; 500Hz=-52.9669 dBFS; 1000Hz=-59.4460 dBFS; 2000Hz=-75.3946 dBFS; 4000Hz=-102.4022 dBFS; ",
+      "audio_label": "ZIPRAF_SAVED_IN_DOWNLOADS",
+      "claim_allowed": "false",
+      "policy": "PASSIVE_READ_ONLY_NO_RADIO_MUTATIONS",
+      "calibration": "NOT_RUN model=D0*(1-tanh_P)+Dneg*H fixed_branch",
+      "gps": "TOKEN_VAZIO_GPS_NO_FIX",
+      "bluetooth": "ADAPTER_ENABLED=false BLE_SCAN=NOT_RUN NO_RADIO_MUTATION",
+      "zip_has_pcm_samples": false,
+      "manifest_integrity": "ZIP_STORED_CRC32_NOT_CRYPTOGRAPHIC_AUTHENTICITY",
+      "event_increments_from_previous": 188,
+      "elapsed_since_previous_seconds": 1.482
+    },
+    {
+      "archive": "Rafaelia_WaveLab_1794448588048.zip",
+      "archive_size_bytes": 2330,
+      "archive_sha256": "32e3ee0e7b5cdbbf516213b4c819b3d7297cfed9b8c15d9017058d0812f964d5",
+      "zip_integrity": "CRC32_OK",
+      "entries": {
+        "00_manifest.txt": {
+          "sha256": "19479399a636b73a5851717ca78b316a048b93d7e941045e9c6b70025ca458b3",
+          "size": 205
+        },
+        "10_observations.txt": {
+          "sha256": "cd1a2dc6130c50a59b09d80ffe216c154c8ea6b974360d1b0a15efd2b03f2eb7",
+          "size": 1883
+        }
+      },
+      "capture_epoch_ms": 1794448588111,
+      "capture_local": "2026-11-11T22:56:28.111000-03:00",
+      "audio_observation_epoch_ms": 1794448563492,
+      "audio_age_seconds": 24.619,
+      "accelerometer_events_total": 2562,
+      "accelerometer_last_sample_age_ms": 81.85,
+      "accel_xyz_m_s2": [
+        0.469,
+        -0.141,
+        9.6
+      ],
+      "accel_delta_x_rms_m_s2": 0.2632,
+      "poincare_x_zero_up_crossings": 22,
+      "source_sha": "6be178da533d22564ae67d4e359668d8fc4f99d3",
+      "spectral_bins_relative_dbfs": "125Hz=-51.1917 dBFS; 250Hz=-59.4712 dBFS; 500Hz=-52.9669 dBFS; 1000Hz=-59.4460 dBFS; 2000Hz=-75.3946 dBFS; 4000Hz=-102.4022 dBFS; ",
+      "audio_label": "ZIPRAF_SAVED_IN_DOWNLOADS",
+      "claim_allowed": "false",
+      "policy": "PASSIVE_READ_ONLY_NO_RADIO_MUTATIONS",
+      "calibration": "NOT_RUN model=D0*(1-tanh_P)+Dneg*H fixed_branch",
+      "gps": "TOKEN_VAZIO_GPS_NO_FIX",
+      "bluetooth": "ADAPTER_ENABLED=false BLE_SCAN=NOT_RUN NO_RADIO_MUTATION",
+      "zip_has_pcm_samples": false,
+      "manifest_integrity": "ZIP_STORED_CRC32_NOT_CRYPTOGRAPHIC_AUTHENTICITY",
+      "event_increments_from_previous": 128,
+      "elapsed_since_previous_seconds": 1.043
+    },
+    {
+      "archive": "Rafaelia_WaveLab_1794448588820.zip",
+      "archive_size_bytes": 2330,
+      "archive_sha256": "8fb6ffd36856a74aebcd7694670e6c1b16efad05fa40d5bbd635db02ff9868e6",
+      "zip_integrity": "CRC32_OK",
+      "entries": {
+        "00_manifest.txt": {
+          "sha256": "19479399a636b73a5851717ca78b316a048b93d7e941045e9c6b70025ca458b3",
+          "size": 205
+        },
+        "10_observations.txt": {
+          "sha256": "06e9c1685a05c9e2a7bb6c0dd349e1b6715dbc7df51d6801e9ec5b1f4711bf99",
+          "size": 1883
+        }
+      },
+      "capture_epoch_ms": 1794448588852,
+      "capture_local": "2026-11-11T22:56:28.852000-03:00",
+      "audio_observation_epoch_ms": 1794448563492,
+      "audio_age_seconds": 25.36,
+      "accelerometer_events_total": 2658,
+      "accelerometer_last_sample_age_ms": 48.254,
+      "accel_xyz_m_s2": [
+        1.12,
+        -0.026,
+        9.945
+      ],
+      "accel_delta_x_rms_m_s2": 0.2624,
+      "poincare_x_zero_up_crossings": 22,
+      "source_sha": "6be178da533d22564ae67d4e359668d8fc4f99d3",
+      "spectral_bins_relative_dbfs": "125Hz=-51.1917 dBFS; 250Hz=-59.4712 dBFS; 500Hz=-52.9669 dBFS; 1000Hz=-59.4460 dBFS; 2000Hz=-75.3946 dBFS; 4000Hz=-102.4022 dBFS; ",
+      "audio_label": "ZIPRAF_SAVED_IN_DOWNLOADS",
+      "claim_allowed": "false",
+      "policy": "PASSIVE_READ_ONLY_NO_RADIO_MUTATIONS",
+      "calibration": "NOT_RUN model=D0*(1-tanh_P)+Dneg*H fixed_branch",
+      "gps": "TOKEN_VAZIO_GPS_NO_FIX",
+      "bluetooth": "ADAPTER_ENABLED=false BLE_SCAN=NOT_RUN NO_RADIO_MUTATION",
+      "zip_has_pcm_samples": false,
+      "manifest_integrity": "ZIP_STORED_CRC32_NOT_CRYPTOGRAPHIC_AUTHENTICITY",
+      "event_increments_from_previous": 96,
+      "elapsed_since_previous_seconds": 0.741
+    },
+    {
+      "archive": "Rafaelia_WaveLab_1794448589536.zip",
+      "archive_size_bytes": 2331,
+      "archive_sha256": "73b145612db8cd9e593a4ef8e7ceea1a35bba09c23617e11d29dcd2f56490db9",
+      "zip_integrity": "CRC32_OK",
+      "entries": {
+        "00_manifest.txt": {
+          "sha256": "19479399a636b73a5851717ca78b316a048b93d7e941045e9c6b70025ca458b3",
+          "size": 205
+        },
+        "10_observations.txt": {
+          "sha256": "2de185cd7b344e3291f31ab6e256df370320d528d6764a900021d200c7989044",
+          "size": 1884
+        }
+      },
+      "capture_epoch_ms": 1794448589571,
+      "capture_local": "2026-11-11T22:56:29.571000-03:00",
+      "audio_observation_epoch_ms": 1794448563492,
+      "audio_age_seconds": 26.079,
+      "accelerometer_events_total": 2746,
+      "accelerometer_last_sample_age_ms": 58.103,
+      "accel_xyz_m_s2": [
+        -0.603,
+        -0.179,
+        9.332
+      ],
+      "accel_delta_x_rms_m_s2": 0.2625,
+      "poincare_x_zero_up_crossings": 22,
+      "source_sha": "6be178da533d22564ae67d4e359668d8fc4f99d3",
+      "spectral_bins_relative_dbfs": "125Hz=-51.1917 dBFS; 250Hz=-59.4712 dBFS; 500Hz=-52.9669 dBFS; 1000Hz=-59.4460 dBFS; 2000Hz=-75.3946 dBFS; 4000Hz=-102.4022 dBFS; ",
+      "audio_label": "ZIPRAF_SAVED_IN_DOWNLOADS",
+      "claim_allowed": "false",
+      "policy": "PASSIVE_READ_ONLY_NO_RADIO_MUTATIONS",
+      "calibration": "NOT_RUN model=D0*(1-tanh_P)+Dneg*H fixed_branch",
+      "gps": "TOKEN_VAZIO_GPS_NO_FIX",
+      "bluetooth": "ADAPTER_ENABLED=false BLE_SCAN=NOT_RUN NO_RADIO_MUTATION",
+      "zip_has_pcm_samples": false,
+      "manifest_integrity": "ZIP_STORED_CRC32_NOT_CRYPTOGRAPHIC_AUTHENTICITY",
+      "event_increments_from_previous": 88,
+      "elapsed_since_previous_seconds": 0.719
+    }
+  ]
+}
