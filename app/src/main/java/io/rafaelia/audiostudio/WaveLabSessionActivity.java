@@ -19,6 +19,10 @@ import android.media.MediaRecorder;
 import android.media.audiofx.AcousticEchoCanceler;
 import android.media.audiofx.AutomaticGainControl;
 import android.media.audiofx.NoiseSuppressor;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -44,7 +48,7 @@ import java.util.Locale;
  * Android AudioRecord/AudioTrack are a hosted I/O edge; mathematical grouping
  * remains in WaveLabTrialMatrix and WaveLabWelchCore.
  */
-public final class WaveLabSessionActivity extends Activity {
+public final class WaveLabSessionActivity extends Activity implements SensorEventListener {
     private static final int PICK_WAV=141, REQUEST_MIC=142;
     private static final int SAMPLE_RATE=48000;
     private static final float TRACK_GAIN=0.10f; // volume fraction, NOT safe SPL guarantee
@@ -56,9 +60,20 @@ public final class WaveLabSessionActivity extends Activity {
     private TextView status;
     private Button pickButton, captureButton;
     private File folder;
+    private SensorManager sensorManager;
+    private final Object sensorLock=new Object();
+    private static final int MAX_ACCEL_EVENTS=4096;
+    private final long[] accelNs=new long[MAX_ACCEL_EVENTS];
+    private final float[] accelX=new float[MAX_ACCEL_EVENTS];
+    private final float[] accelY=new float[MAX_ACCEL_EVENTS];
+    private final float[] accelZ=new float[MAX_ACCEL_EVENTS];
+    private int accelCount;
+    private boolean accelOverflow;
+    private volatile boolean collectAccel;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
+        sensorManager=(SensorManager)getSystemService(SENSOR_SERVICE);
         LinearLayout panel=new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
         int pad=(int)(16*getResources().getDisplayMetrics().density);
@@ -283,6 +298,11 @@ public final class WaveLabSessionActivity extends Activity {
             AudioTimestamp audioStamp=new AudioTimestamp();
             recorder.startRecording();
             startNs=SystemClock.elapsedRealtimeNanos();
+            synchronized(sensorLock) {
+                accelCount=0;
+                accelOverflow=false;
+                collectAccel=true;
+            }
             if(recorder.getTimestamp(audioStamp,AudioTimestamp.TIMEBASE_MONOTONIC)
                     ==AudioRecord.SUCCESS) {
                 audioFrame=audioStamp.framePosition;
@@ -311,6 +331,7 @@ public final class WaveLabSessionActivity extends Activity {
                 sink.getFD().sync();
             }
             endNs=SystemClock.elapsedRealtimeNanos();
+            collectAccel=false;
             if(cancelCapture || written!=target)
                 throw new IllegalStateException("CAPTURE_INCOMPLETE");
             String micRouteAfter=route(recorder.getRoutedDevice());
@@ -342,6 +363,36 @@ public final class WaveLabSessionActivity extends Activity {
                     SAMPLE_RATE,written,clipped,startNs,endNs,
                     spectrum.frequenciesHz,spectrum.bandPowers);
             WaveLabTrialMatrix.Decision outcome=trials.append(take);
+            // Persist optional acceleration samples under the same attempt identifier.
+            // SensorEvent.timestamp and AudioTimestamp use monotonic time bases,
+            // but exact microphone/sensor sample alignment is NOT established.
+            String accelHash="TOKEN_VAZIO_NO_SENSOR_EVENTS";
+            int capturedAccel;
+            boolean capturedOverflow;
+            StringBuilder accelerometer=new StringBuilder("monotonic_ns,ax_m_s2,ay_m_s2,az_m_s2\n");
+            synchronized(sensorLock) {
+                capturedAccel=accelCount;
+                capturedOverflow=accelOverflow;
+                for(int j=0;j<accelCount;j++) {
+                    accelerometer.append(accelNs[j]).append(',')
+                            .append(accelX[j]).append(',')
+                            .append(accelY[j]).append(',')
+                            .append(accelZ[j]).append('\n');
+                }
+            }
+            if(capturedAccel>0) {
+                byte[] sensorBytes=accelerometer.toString()
+                        .getBytes(StandardCharsets.UTF_8);
+                File sensorFile=new File(folder,role.name().toLowerCase(Locale.US)+
+                        "_"+attemptId+"_accelerometer.csv");
+                if(!sensorFile.createNewFile())
+                    throw new IllegalStateException("SENSOR_FILE_ALREADY_EXISTS");
+                try(FileOutputStream sensorOut=new FileOutputStream(sensorFile,true)){
+                    sensorOut.write(sensorBytes);
+                    sensorOut.getFD().sync();
+                }
+                accelHash=sha256(sensorBytes);
+            }
             String envelope="schema=rafaelia.audio.three_takes.v1\n"+
                     "source_commit="+BuildConfig.SOURCE_SHA+"\n"+
                     "role="+role+"\nsource_wav_sha256="+referenceSha+"\n"+
@@ -359,6 +410,9 @@ public final class WaveLabSessionActivity extends Activity {
                     "track_gain="+TRACK_GAIN+"\n"+
                     "estimator="+WaveLabWelchCore.ESTIMATOR+"\n"+
                     "welch_windows="+spectrum.windowCount+"\n"+
+                    "accelerometer_events="+capturedAccel+"\n"+
+                    "accelerometer_overflow="+capturedOverflow+"\n"+
+                    "accelerometer_csv_sha256="+accelHash+"\n"+
                     "decision="+outcome+"\n"+
                     "SPL_ABSOLUTE=TOKEN_VAZIO_UNCALIBRATED\n"+
                     "LOOPBACK_ALIGNMENT=TOKEN_VAZIO_NOT_MEASURED\n"+
@@ -412,6 +466,7 @@ public final class WaveLabSessionActivity extends Activity {
                 }
             }catch(Exception ignored) { /* UI still reports failure */ }
         } finally {
+            collectAccel=false;
             if(player!=null) {
                 try{if(player.getPlayState()==AudioTrack.PLAYSTATE_PLAYING)
                     player.stop();}catch(RuntimeException ignored){}
@@ -432,8 +487,33 @@ public final class WaveLabSessionActivity extends Activity {
             });
         }
     }
+    @Override protected void onResume() {
+        super.onResume();
+        if(sensorManager!=null) {
+            Sensor a=sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+            if(a!=null) sensorManager.registerListener(this,a,SensorManager.SENSOR_DELAY_GAME);
+        }
+    }
     @Override protected void onPause() {
         if(busy) cancelCapture=true;
+        collectAccel=false;
+        if(sensorManager!=null) sensorManager.unregisterListener(this);
         super.onPause();
+    }
+    @Override public void onAccuracyChanged(Sensor sensor,int accuracy) { }
+    @Override public void onSensorChanged(SensorEvent event) {
+        if(!collectAccel || event.sensor.getType()!=Sensor.TYPE_ACCELEROMETER)return;
+        synchronized(sensorLock) {
+            if(!collectAccel)return;
+            if(accelCount>=MAX_ACCEL_EVENTS) {
+                accelOverflow=true;
+                return;
+            }
+            int i=accelCount++;
+            accelNs[i]=event.timestamp;
+            accelX[i]=event.values[0];
+            accelY[i]=event.values[1];
+            accelZ[i]=event.values[2];
+        }
     }
 }
