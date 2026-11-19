@@ -4,7 +4,7 @@
  */
 package io.rafaelia.audiostudio;
 
-import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -42,21 +42,21 @@ final class WaveLabReferencePcm {
 
     static byte[] readBounded(InputStream source) throws IOException {
         if (source == null) throw new IOException("MISSING_SOURCE");
-        ByteArrayOutputStream out = new ByteArrayOutputStream(8192);
-        byte[] buf = new byte[8192];
-        int zeroReads = 0;
-        for (;;) {
-            int read = source.read(buf);
-            if (read < 0) break;
+        // Fixed bounded arena; no extensible stream or unbounded allocation.
+        byte[] arena = new byte[MAX_WAV_BYTES];
+        int used = 0, zeroReads = 0;
+        while (used < arena.length) {
+            int read = source.read(arena, used, arena.length - used);
+            if (read < 0) return Arrays.copyOf(arena, used);
             if (read == 0) {
                 if (++zeroReads > 8) throw new IOException("STALL_READING_WAV");
                 continue;
             }
+            used += read;
             zeroReads = 0;
-            if (out.size() > MAX_WAV_BYTES - read) throw new IOException("WAV_TOO_LARGE");
-            out.write(buf, 0, read);
         }
-        return out.toByteArray();
+        if (source.read() >= 0) throw new IOException("WAV_TOO_LARGE");
+        return arena;
     }
 
     static Parsed parse(byte[] b) throws IOException {
