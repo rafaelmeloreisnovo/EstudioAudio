@@ -268,10 +268,14 @@ public final class WaveLabSessionActivity extends Activity {
             if(loaded!=stimulus.length)
                 throw new IllegalStateException("PLAYBACK_REFERENCE_SHORT_WRITE");
             player.setVolume(TRACK_GAIN);
-            String micRouteBefore=route(recorder.getRoutedDevice());
-            String outRouteBefore=route(player.getRoutedDevice());
+            String micRouteBefore="ROUTE_UNOBSERVED";
+            String outRouteBefore="ROUTE_UNOBSERVED";
             MessageDigest digest=MessageDigest.getInstance("SHA-256");
-            pcmFile=new File(folder,role.name().toLowerCase(Locale.US)+"_mic48k_s16le.pcm");
+            String attemptId=Long.toHexString(SystemClock.elapsedRealtimeNanos());
+            pcmFile=new File(folder,role.name().toLowerCase(Locale.US)+"_"+
+                    attemptId+"_mic48k_s16le.pcm");
+            if(!pcmFile.createNewFile())
+                throw new IllegalStateException("CAPTURE_FILE_ALREADY_EXISTS");
             short[] pcm=new short[target];
             short[] block=new short[4096];
             byte[] bytes=new byte[block.length*2];
@@ -286,7 +290,9 @@ public final class WaveLabSessionActivity extends Activity {
             }
             if(cancelCapture)throw new IllegalStateException("ACTIVITY_PAUSED");
             player.play();
-            try(FileOutputStream sink=new FileOutputStream(pcmFile,false)) {
+            micRouteBefore=route(recorder.getRoutedDevice());
+            outRouteBefore=route(player.getRoutedDevice());
+            try(FileOutputStream sink=new FileOutputStream(pcmFile,true)) {
                 while(written<target && !cancelCapture) {
                     int got=recorder.read(block,0,
                             Math.min(block.length,target-written),AudioRecord.READ_BLOCKING);
@@ -307,15 +313,19 @@ public final class WaveLabSessionActivity extends Activity {
             endNs=SystemClock.elapsedRealtimeNanos();
             if(cancelCapture || written!=target)
                 throw new IllegalStateException("CAPTURE_INCOMPLETE");
+            String micRouteAfter=route(recorder.getRoutedDevice());
+            String outRouteAfter=route(player.getRoutedDevice());
             player.stop();
             recorder.stop();
             if(manager!=null &&
                     manager.getStreamVolume(AudioManager.STREAM_MUSIC)!=volumeStart)
                 throw new IllegalStateException("PLAYBACK_VOLUME_CHANGED");
-            String micRouteAfter=route(recorder.getRoutedDevice());
-            String outRouteAfter=route(player.getRoutedDevice());
-            if(!micRouteBefore.equals(micRouteAfter) ||
-                    !outRouteBefore.equals(outRouteAfter))
+            if((!micRouteBefore.equals("ROUTE_UNOBSERVED") &&
+                    !micRouteAfter.equals("ROUTE_UNOBSERVED") &&
+                    !micRouteBefore.equals(micRouteAfter)) ||
+                    (!outRouteBefore.equals("ROUTE_UNOBSERVED") &&
+                    !outRouteAfter.equals("ROUTE_UNOBSERVED") &&
+                    !outRouteBefore.equals(outRouteAfter)))
                 throw new IllegalStateException("AUDIO_DEVICE_ROUTE_CHANGED");
 
             WaveLabWelchCore.Result spectrum=WaveLabWelchCore.analyze(pcm,written);
@@ -357,7 +367,8 @@ public final class WaveLabSessionActivity extends Activity {
                 envelope+="band_"+(int)spectrum.frequenciesHz[b]+"Hz_power="+
                         spectrum.bandPowers[b]+"\n";
             try(FileOutputStream meta=new FileOutputStream(
-                    new File(folder,role.name().toLowerCase(Locale.US)+"_receipt.txt"),false)) {
+                    new File(folder,role.name().toLowerCase(Locale.US)+"_"+
+                            attemptId+"_receipt.txt"),true)) {
                 meta.write(envelope.getBytes(StandardCharsets.UTF_8));
                 meta.getFD().sync();
             }
@@ -385,6 +396,21 @@ public final class WaveLabSessionActivity extends Activity {
                     "PCM_PARTIAL_IF_PRESENT="+(pcmFile==null?"NONE":
                             pcmFile.getName())+"\n"+
                     "CLAIM_ALLOWED=false";
+            // Append-only failure receipt; no partial capture is silently promoted.
+            try {
+                if (folder.isDirectory()) {
+                    File errorReceipt=new File(folder,"failed_"+
+                            Long.toHexString(SystemClock.elapsedRealtimeNanos())+".txt");
+                    if (errorReceipt.createNewFile()) {
+                        try(FileOutputStream sink=new FileOutputStream(errorReceipt,true)){
+                            sink.write((report+"\nrole="+role+
+                                    "\nraw_status=PARTIAL_NOT_ACCEPTED\n")
+                                    .getBytes(StandardCharsets.UTF_8));
+                            sink.getFD().sync();
+                        }
+                    }
+                }
+            }catch(Exception ignored) { /* UI still reports failure */ }
         } finally {
             if(player!=null) {
                 try{if(player.getPlayState()==AudioTrack.PLAYSTATE_PLAYING)
