@@ -32,6 +32,11 @@
             android:name=".WavePhysicsLabActivity"
             android:exported="false" />
 
+        <!-- Explicit user-controlled research capture; private local PCM, no auto-play. -->
+        <activity
+            android:name=".WaveLabSessionActivity"
+            android:exported="false" />
+
         <activity
             android:name=".InstrumentSurveyActivity"
             android:exported="false"
