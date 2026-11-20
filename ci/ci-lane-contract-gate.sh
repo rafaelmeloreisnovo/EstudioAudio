@@ -34,6 +34,23 @@ upload_pin='actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9'
 test "$(grep -Fc "uses: $upload_pin" "$wf")" -eq 2 || fail 'APK_DOWNLOAD_PIN_OR_COUNT_REGRESSION'
 grep -Fq 'archive: false' "$wf" || fail 'APK_DIRECT_DOWNLOAD_NOT_CONFIGURED'
 grep -Fq 'if-no-files-found: error' "$wf" || fail 'APK_MISSING_NOT_FAIL_CLOSED'
+
+# Signed provenance must be emitted and verified on full APK lane only.
+attest_pin='actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6'
+test "$(grep -Fc "uses: $attest_pin" "$wf")" -eq 1 || fail 'ATTESTATION_PIN_OR_COUNT_REGRESSION'
+grep -Fq 'id-token: write' "$wf" || fail 'ATTESTATION_OIDC_PERMISSION_MISSING'
+grep -Fq 'attestations: write' "$wf" || fail 'ATTESTATION_WRITE_PERMISSION_MISSING'
+grep -Fq 'gh attestation verify "$subject"' "$wf" || fail 'ATTESTATION_VERIFY_MISSING'
+grep -Fq -- '--signer-workflow "$signer"' "$wf" || fail 'ATTESTATION_SIGNER_POLICY_MISSING'
+awk '
+  /^  gate:/ { gate=1; next }
+  gate && /^  [a-z_]+:/ { gate=0 }
+  gate && /- name: 80 · binary receipt/ { receipt=NR }
+  gate && /- name: 82.5 · attest exact APK/ { attest=NR }
+  gate && /- name: 82.6 · verify signature/ { verify=NR }
+  gate && /- name: 83 · upload exact APK/ { upload=NR }
+  END { exit !(receipt > 0 && attest > receipt && verify > attest && upload > verify) }
+' "$wf" || fail 'ATTESTATION_NOT_BETWEEN_RECEIPT_AND_APK_UPLOAD'
 awk '
   /^  gate:/ { gate=1; next }
   gate && /^  [a-z_]+:/ { gate=0 }
