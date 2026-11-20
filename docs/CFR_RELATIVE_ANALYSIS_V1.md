@@ -64,6 +64,38 @@ ROOM relative decay profile
 
 `SPEC` and `ROOM` are derived artifacts linked to the preserved PCM source inside the same container.
 
+## PCM16 rail quality gate — isolated hotfix, 2026-11-20
+
+A captured response can contain exact digital-rail samples (`-32768` or
+`32767`) even when the reference sweep does not. The platform edge observes
+these samples **after microphone capture** and preserves the original PCM/CFR:
+
+```text
+PCM_INVALID_OR_EMPTY -> TOKEN_VAZIO_INVALID_CAPTURE
+PCM_RAIL_SAMPLES > 0  -> REVIEW_REQUIRED_PCM_FULL_SCALE
+PCM_RAIL_SAMPLES == 0 -> NO_PCM_FULL_SCALE_OBSERVED_NOT_CALIBRATED
+```
+
+This is a *data-quality observation*, **not** a diagnosis of analogue clipping,
+hardware damage, audible dropouts or absolute SPL. A zero count does not prove
+an unclipped analogue path. Review-required sweeps retain the raw CFR and the
+16 relative time-slice metrics for inspection, but must **not** be promoted to
+a trustworthy frequency-response or room-quality claim until a controlled
+repeat has resolved the cause.
+
+- Source: `PcmRailGate.java` + `RelativeCalibrationEngine.java`.
+- Display: `MainActivity.java` shows the typed count and quality status.
+- Custody: `AssuranceZiprafWriter.java` records both fields only when the
+  calibration result exists; missing capture remains `NOT_RUN`.
+- Host test: `ci/java/PcmRailGateTest.java` covers null/empty/out-of-bounds,
+  both PCM16 rails, bounded prefix, and typed zero/unknown status.
+- Existing CFR bytes and historical receipts are **not modified**. This
+  metadata is produced only by subsequent execution of the hotfixed APK.
+- Exact-head APK CI, Android 10/16 E2E and independent device reproduction:
+  `TOKEN_VAZIO_NOT_RUN` until evidence is recorded for the changed commit.
+- Rollback: revert the isolated branch delta; retain historical CFRs and
+  append a correction receipt instead of deleting or mutating evidence.
+
 ## Claim boundary
 
 ```text
