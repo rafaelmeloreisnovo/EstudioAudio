@@ -158,6 +158,8 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
+      id-token: write
+      attestations: write
     env:
       RFA_SOURCE_SHA: ${{ needs.plan.outputs.source_sha }}
       RFA_CI_RUN_ID: ${{ github.run_id }}
@@ -258,6 +260,54 @@ jobs:
             echo 'Delivery: workflow artifact only, no GitHub Release / no Play deployment.'
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # Signed SLSA attestation binds exact APK plus both custody receipts.
+      # Workflow event SHA and explicit PR-head checkout can differ; a PR
+      # signature does not silently prove that these SHA values are equal.
+      - name: 82.5 · attest exact APK and custody bytes (SLSA)
+        id: signed_apk_provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # pinned v4
+        with:
+          subject-path: |
+            ${{ env.RFA_DOWNLOAD_APK }}
+            ${{ env.RFA_BINARY_RECEIPT }}
+            ${{ env.RFA_ENTRY_MANIFEST }}
+
+      - name: 82.6 · verify signature digest and signer (fail closed)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUNDLE_PATH: ${{ steps.signed_apk_provenance.outputs.bundle-path }}
+        run: |
+          set -euo pipefail
+          test -s "$BUNDLE_PATH"
+          test "$(git rev-parse HEAD)" = "$RFA_SOURCE_SHA"
+          test "$(sha256sum "$RFA_DOWNLOAD_APK" | cut -d' ' -f1)" = "$RFA_APK_SHA256"
+          signer="$GITHUB_REPOSITORY/.github/workflows/START.yml"
+          for subject in "$RFA_DOWNLOAD_APK" "$RFA_BINARY_RECEIPT" "$RFA_ENTRY_MANIFEST"; do
+            test -s "$subject"
+            gh attestation verify "$subject" --repo "$GITHUB_REPOSITORY" \
+              --bundle "$BUNDLE_PATH" --signer-workflow "$signer" \
+              --format json > /dev/null
+          done
+          if test "$GITHUB_SHA" = "$RFA_SOURCE_SHA"; then
+            gh attestation verify "$RFA_DOWNLOAD_APK" --repo "$GITHUB_REPOSITORY" \
+              --bundle "$BUNDLE_PATH" --signer-workflow "$signer" \
+              --source-digest "$RFA_SOURCE_SHA" --format json > /dev/null
+            echo "ATTESTATION_SOURCE_DIGEST=ENFORCED"
+          else
+            echo "ATTESTATION_SOURCE_DIGEST=TOKEN_VAZIO_WORKFLOW_CONTEXT_DIFFERS_FROM_CHECKOUT"
+            echo "WORKFLOW_EVENT_SHA=$GITHUB_SHA"
+            echo "EXACT_CHECKOUT_SHA=$RFA_SOURCE_SHA"
+          fi
+          bundle="$RUNNER_TEMP/rafaelia-apk-slsa.bundle.json"
+          cp "$BUNDLE_PATH" "$bundle"
+          sha256sum "$bundle" > "$RUNNER_TEMP/rafaelia-apk-slsa.bundle.json.sha256"
+          echo "RFA_ATTESTATION_BUNDLE_PATH=$bundle" >> "$GITHUB_ENV"
+          echo "RFA_ATTESTATION_BUNDLE_SHA_PATH=$RUNNER_TEMP/rafaelia-apk-slsa.bundle.json.sha256" >> "$GITHUB_ENV"
+          echo "SIGNED_APK_PROVENANCE=VERIFIED_SCOPED"
+          echo "PHYSICAL_ANDROID=NOT_RUN"
+          echo "CLAIM_ALLOWED=false"
+
       - name: 83 · upload exact APK (Node 24 GitHub platform edge)
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -273,6 +323,8 @@ jobs:
           path: |
             ${{ env.RFA_BINARY_RECEIPT }}
             ${{ env.RFA_ENTRY_MANIFEST }}
+            ${{ env.RFA_ATTESTATION_BUNDLE_PATH }}
+            ${{ env.RFA_ATTESTATION_BUNDLE_SHA_PATH }}
           if-no-files-found: error
           retention-days: 14
 
