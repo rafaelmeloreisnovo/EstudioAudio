@@ -750,7 +750,9 @@ public final class MainActivity extends Activity {
                             "PIPELINE=CAPTURED_AND_ANALYZED_RELATIVE" +
                             "\nREF/CAPTURE=BUFFERED_IN_CFR · observer=JNI_C_EXECUTED" +
                             "\nNEXT=GERAR_ZIPRAF_RECEIPT · " +
-                            "ABS_SPL=PENDING_PHYSICAL_REFERENCE · CLAIM_ALLOWED=false");
+                            "ABS_SPL=PENDING_PHYSICAL_REFERENCE · CLAIM_ALLOWED=false" +
+                            "\nPCM_FULL_SCALE_SAMPLES=" + result.pcmFullScaleSamples +
+                            " · QUALITY=" + PcmRailGate.qualityState(result.pcmFullScaleSamples));
                     long rtMs = result.preferredRt60Millis();
                     String roomState = "ROOM=" + result.decayMethod() +
                             (rtMs >= 0L ? " | RT60_REL~" + rtMs + " ms" :
@@ -819,6 +821,9 @@ public final class MainActivity extends Activity {
                 .append(" · glitches_candidate=").append(obs[8])
                 .append(" · acoustic_shift_candidate=").append(obs[9])
                 .append(" · observer_flags=").append(obs[10])
+                .append("\nPCM_FULL_SCALE_SAMPLES=").append(result.pcmFullScaleSamples)
+                .append(" · PCM_QUALITY=").append(
+                        PcmRailGate.qualityState(result.pcmFullScaleSamples))
                 .append("\nRATIO Q20 (mic/ref): ");
         for (int i = 0; i < 16; ++i) {
             if (i > 0) box.append(',');
