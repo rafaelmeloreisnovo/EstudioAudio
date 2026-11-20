@@ -55,6 +55,7 @@ final class RelativeCalibrationEngine {
         final long[] sweepProfile;
         final long[] decayProfile;
         final long[] observerMetrics;
+        final int pcmFullScaleSamples;
 
         Result(
                 File cfrFile,
@@ -66,7 +67,8 @@ final class RelativeCalibrationEngine {
                 String inputSource,
                 long[] sweepProfile,
                 long[] decayProfile,
-                long[] observerMetrics) {
+                long[] observerMetrics,
+                int pcmFullScaleSamples) {
             this.cfrFile = cfrFile;
             this.capturedFrames = capturedFrames;
             this.bestLag = bestLag;
@@ -77,6 +79,7 @@ final class RelativeCalibrationEngine {
             this.sweepProfile = sweepProfile;
             this.decayProfile = decayProfile;
             this.observerMetrics = observerMetrics;
+            this.pcmFullScaleSamples = pcmFullScaleSamples;
         }
 
         long latencyMicros() {
@@ -305,6 +308,12 @@ final class RelativeCalibrationEngine {
             throw new IOException("observer JNI rejected captured PCM");
         }
 
+        // Exact PCM16 rails: an observable review gate, not proof of analogue clipping.
+        int pcmFullScaleSamples = PcmRailGate.countFullScaleSamples(response, captured);
+        if (pcmFullScaleSamples == PcmRailGate.TOKEN_VAZIO_INVALID_CAPTURE) {
+            throw new IOException("PCM quality observer rejected capture bounds");
+        }
+
         phase(observer, "06_CFR · preservar referencia, captura e 16 faixas");
         CalibrationContainerWriter.writeRelativeCfr(
                 cfrTarget,
@@ -334,7 +343,8 @@ final class RelativeCalibrationEngine {
                 input.sourceName,
                 sweepProfile,
                 decayProfile,
-                observerMetrics);
+                observerMetrics,
+                pcmFullScaleSamples);
     }
 
     private static final class InputHandle {
