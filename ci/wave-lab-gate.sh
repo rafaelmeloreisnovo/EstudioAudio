@@ -19,6 +19,21 @@ java -cp "$tmp" io.rafaelia.audiostudio.WaveLabDOperatorsTest
 javac -encoding UTF-8 -cp "$tmp" -d "$tmp" "$dir/WaveLabDSimulator.java" ci/WaveLabDSimulatorTest.java
 java -cp "$tmp" io.rafaelia.audiostudio.WaveLabDSimulatorTest
 
+# Trial matrix is a hosted Java-only, relative, three-independent-takes comparator.
+# Do not relabel existing single-window Goertzel measurements as broadband RTA.
+javac -encoding UTF-8 -Xlint:all -Werror -d "$tmp" \
+  "$dir/WaveLabTrialMatrix.java" ci/WaveLabTrialMatrixTest.java
+java -cp "$tmp" io.rafaelia.audiostudio.WaveLabTrialMatrixTest
+
+# Continuous session reference/FFT source is separately gate-bound; this is
+# purely Java host math, NOT a device recording or SPL calibration.
+grep -Fq 'WaveLabSessionActivity.class' "$file"
+grep -Fq 'android:name=".WaveLabSessionActivity"' app/src/main/AndroidManifest.xml
+javac -encoding UTF-8 -Xlint:all -Werror -d "$tmp" \
+  "$dir/WaveLabReferencePcm.java" \
+  "$dir/WaveLabWelchCore.java" ci/WaveLabReferenceSpectrumTest.java
+java -cp "$tmp" io.rafaelia.audiostudio.WaveLabReferenceSpectrumTest
+
 echo 'WAVE_LAB_PLATFORM_FREE_MATH=PASS_HOST'
 echo 'WAVE_LAB_UI_ANDROID_COMPILE=NOT_RUN_FAST_LANE'
 
