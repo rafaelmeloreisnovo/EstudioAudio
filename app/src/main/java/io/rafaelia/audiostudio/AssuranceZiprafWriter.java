@@ -322,6 +322,9 @@ final class AssuranceZiprafWriter {
                     "\"analyzed_samples\":" + obs[3] +
                     ",\"silence_runs\":" + obs[6] +
                     ",\"glitch_candidates\":" + obs[8] +
+                    ",\"pcm_full_scale_samples\":" + calibration.pcmFullScaleSamples +
+                    ",\"pcm_quality_state\":\"" +
+                        PcmRailGate.qualityState(calibration.pcmFullScaleSamples) + "\"" +
                     ",\"acoustic_shift_candidates\":" + obs[9] +
                     ",\"observer_flags\":" + obs[10] +
                     ",\"reference_16_sweep_window_energy\":" +
